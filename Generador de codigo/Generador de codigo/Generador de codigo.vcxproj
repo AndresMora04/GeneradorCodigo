@@ -11,14 +11,24 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ArchivoCodigo.cpp" />
+    <ClCompile Include="ConvertidorCodigo.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainView.cpp" />
+    <ClCompile Include="Mensaje.cpp" />
+    <ClCompile Include="Utilidad.cpp" />
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="MainView.h" />
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="MainView.ui" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ArchivoCodigo.h" />
+    <ClInclude Include="ConvertidorCodigo.h" />
+    <ClInclude Include="Mensaje.h" />
+    <ClInclude Include="Utilidad.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E86855D8-6EBB-4DF2-A155-8D615A1CB8CB}</ProjectGuid>
