@@ -45,13 +45,17 @@ void MainView::onCargar()
 
 void MainView::onConvertir()
 {
+    string texto = ui.txtCargado->toPlainText().toStdString();
+    convertidor.setTexto(texto);
+
     if (convertidor.procesar()) {
         string codigo = convertidor.construirPrograma();
         ui.txtConvertido->setPlainText(QString::fromStdString(codigo));
         ui.btnGuardar->setEnabled(true);
         statusBar()->showMessage("Conversión exitosa", 3000);
-    } else {
-        ui.txtConvertido->setPlainText("// No se pudo convertir el texto cargado.\n");
+    }
+    else {
+        ui.txtConvertido->setPlainText("// No se pudo convertir el texto cargado o escrito.\n");
         ui.btnGuardar->setEnabled(false);
         statusBar()->showMessage("Error en la conversión", 3000);
     }

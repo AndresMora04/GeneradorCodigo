@@ -251,18 +251,32 @@ string ConvertidorCodigo::emitirCrearVariable(string lineaOriginal) {
     string nombre = "variable";
     string valor = "0";
 
+    bool tipoDetectado = false;
+
     for (size_t i = 0; i < palabras.size(); i++) {
         if (palabras[i] == "decimal") {
             tipo = "float";
-            if (i + 1 < palabras.size()) nombre = palabras[i + 1]; // nombre después de "decimal"
+            tipoDetectado = true;
+            if (i + 1 < palabras.size()) nombre = palabras[i + 1];
         }
-        else if (palabras[i] == "entero") {
+        else if (palabras[i] == "entero" || palabras[i] == "int") {
             tipo = "int";
-            if (i + 1 < palabras.size()) nombre = palabras[i + 1]; // nombre después de "entero"
+            tipoDetectado = true;
+            if (i + 1 < palabras.size()) nombre = palabras[i + 1];
         }
         else if (palabras[i] == "texto" || palabras[i] == "string") {
             tipo = "string";
-            if (i + 1 < palabras.size()) nombre = palabras[i + 1]; // nombre después de "texto"
+            tipoDetectado = true;
+            if (i + 1 < palabras.size()) nombre = palabras[i + 1];
+        }
+    }
+
+    if (!tipoDetectado) {
+        for (size_t i = 0; i < palabras.size(); i++) {
+            if (palabras[i] == "variable" && i + 1 < palabras.size()) {
+                nombre = palabras[i + 1];
+                break;
+            }
         }
     }
 
@@ -272,7 +286,7 @@ string ConvertidorCodigo::emitirCrearVariable(string lineaOriginal) {
     }
 
     if (tipo == "string") {
-        valor = "\"\"";
+        valor = "\"\""; 
         size_t posComilla = lineaOriginal.find("\"");
         if (posComilla != string::npos) {
             size_t ultimaComilla = lineaOriginal.find_last_of("\"");

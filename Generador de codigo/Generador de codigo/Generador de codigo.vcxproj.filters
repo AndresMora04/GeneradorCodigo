@@ -29,9 +29,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ArchivoCodigo.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ConvertidorCodigo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -53,9 +50,6 @@
     </QtUic>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ArchivoCodigo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ConvertidorCodigo.h">
       <Filter>Header Files</Filter>
     </ClInclude>

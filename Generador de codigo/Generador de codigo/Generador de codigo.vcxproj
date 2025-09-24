@@ -11,7 +11,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ArchivoCodigo.cpp" />
     <ClCompile Include="ConvertidorCodigo.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainView.cpp" />
@@ -25,7 +24,6 @@
     <QtUic Include="MainView.ui" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ArchivoCodigo.h" />
     <ClInclude Include="ConvertidorCodigo.h" />
     <ClInclude Include="Mensaje.h" />
     <ClInclude Include="Utilidad.h" />
