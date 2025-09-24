@@ -6,7 +6,7 @@ using namespace std;
 
 class Utilidad
 {
-	private:
+	public:
         static string convertirAMinusculas(string texto);
 
         static string recortarEspacios(string texto);
