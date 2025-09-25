@@ -14,65 +14,96 @@
    <string>MainView</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QPushButton" name="btnCargar">
-    <property name="geometry">
-     <rect>
-      <x>120</x>
-      <y>220</y>
-      <width>80</width>
-      <height>24</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Cargar</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="btnConvertir">
-    <property name="geometry">
-     <rect>
-      <x>250</x>
-      <y>220</y>
-      <width>80</width>
-      <height>24</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Convertir</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="btnGuardar">
-    <property name="geometry">
-     <rect>
-      <x>380</x>
-      <y>220</y>
-      <width>80</width>
-      <height>24</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Guardar</string>
-    </property>
-   </widget>
-   <widget class="QTextEdit" name="txtCargado">
-    <property name="geometry">
-     <rect>
-      <x>120</x>
-      <y>50</y>
-      <width>101</width>
-      <height>111</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="QTextEdit" name="txtConvertido">
-    <property name="geometry">
-     <rect>
-      <x>340</x>
-      <y>50</y>
-      <width>101</width>
-      <height>111</height>
-     </rect>
-    </property>
-   </widget>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="layoutDirection">
+    <enum>Qt::LayoutDirection::LeftToRight</enum>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
+     <layout class="QVBoxLayout" name="mainView" stretch="0,0,0">
+      <property name="sizeConstraint">
+       <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
+      </property>
+      <property name="leftMargin">
+       <number>10</number>
+      </property>
+      <property name="topMargin">
+       <number>10</number>
+      </property>
+      <property name="rightMargin">
+       <number>10</number>
+      </property>
+      <property name="bottomMargin">
+       <number>10</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="lbTitulo">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::LayoutDirection::LeftToRight</enum>
+        </property>
+        <property name="text">
+         <string>Convertidor de lenguaje natural</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="hboxTextos" stretch="1,1">
+        <property name="sizeConstraint">
+         <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
+        </property>
+        <item>
+         <widget class="QTextEdit" name="txtCargado"/>
+        </item>
+        <item>
+         <widget class="QTextEdit" name="txtConvertido"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="hboxBotones" stretch="0,0,0">
+        <item>
+         <widget class="QPushButton" name="btnCargar">
+          <property name="text">
+           <string>Cargar</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnConvertir">
+          <property name="text">
+           <string>Convertir</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnGuardar">
+          <property name="text">
+           <string>Guardar</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">

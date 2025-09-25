@@ -40,6 +40,7 @@ private:
     int contadorResta = 0;
     int contadorMultiplicacion = 0;
     int contadorDivision = 0;
+	int contadorLista = 0;
 
     Intencion detectarIntencion(string lineaNormalizada);
 
@@ -51,6 +52,7 @@ private:
     string emitirCrearLista(string lineaOriginal);
 	string emitirRepetir(string lineaOriginal);
 	string emitirMientras(string lineaOriginal);
+	string emitirSi(string lineaOriginal);
 	string emitirCrearVariable(string lineaOriginal);
     string buscarVariable(string nombre);
 public:
