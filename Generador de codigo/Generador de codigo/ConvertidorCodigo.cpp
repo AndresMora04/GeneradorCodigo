@@ -40,12 +40,15 @@ bool ConvertidorCodigo::procesar() {
 		string codigo = "";
 
 		switch (intencion) {
+		case Intencion::Comenzar: codigo = emitirComenzar(lineaOriginal); break;
+		case Intencion::Terminar: codigo = emitirTerminar(lineaOriginal); break;
 		case Intencion::Suma: codigo = emitirSuma(lineaOriginal); break;
 		case Intencion::Resta: codigo = emitirResta(lineaOriginal); break;
 		case Intencion::Multiplicacion: codigo = emitirMultiplicacion(lineaOriginal); break;
 		case Intencion::Division: codigo = emitirDivision(lineaOriginal); break;
 		case Intencion::Imprimir: codigo = emitirImprimir(lineaOriginal); break;
 		case Intencion::CrearLista: codigo = emitirCrearLista(lineaOriginal); break;
+		case Intencion::AsignarElementoLista: codigo = emitirAsignarElementoLista(lineaOriginal); break;
 		case Intencion::Repetir: codigo = emitirRepetir(lineaOriginal); break;
 		case Intencion::Mientras: codigo = emitirMientras(lineaOriginal); break;
 		case Intencion::CrearVariable: codigo = emitirCrearVariable(lineaOriginal); break;
@@ -65,19 +68,12 @@ bool ConvertidorCodigo::procesar() {
 }
 
 string ConvertidorCodigo::construirPrograma() {
-	string programa =
-		"#include <iostream>\n"
-		"#include <vector>\n"
-		"using namespace std;\n\n"
-		"int main() {\n";
-
-	programa += codigoGenerado;
-
-	programa += "    return 0;\n}\n";
-	return programa;
+	return codigoGenerado;
 }
 
 Intencion ConvertidorCodigo::detectarIntencion(string lineaNormalizada) {
+	if (lineaNormalizada.find("comenzar programa") != string::npos) return Intencion::Comenzar;
+	if (lineaNormalizada.find("terminar programa") != string::npos) return Intencion::Terminar;
 	if (lineaNormalizada.rfind("si ", 0) == 0) return Intencion::Si;
 	if (lineaNormalizada.find("repetir") != string::npos) return Intencion::Repetir;
 	if (lineaNormalizada.find("mientras") != string::npos) return Intencion::Mientras;
@@ -86,9 +82,24 @@ Intencion ConvertidorCodigo::detectarIntencion(string lineaNormalizada) {
 	if (lineaNormalizada.find("restar") != string::npos) return Intencion::Resta;
 	if (lineaNormalizada.find("multiplicar") != string::npos) return Intencion::Multiplicacion;
 	if (lineaNormalizada.find("dividir") != string::npos) return Intencion::Division;
+	if (lineaNormalizada.find("crear lista") != string::npos || lineaNormalizada.find("crear una lista") != string::npos) {
+		return Intencion::CrearLista;
+	}
+	if (lineaNormalizada.find("asignar valor") != string::npos && lineaNormalizada.find("lista") != string::npos) {
+		return Intencion::AsignarElementoLista;
+	}
 	if (lineaNormalizada.find("imprimir") != string::npos || lineaNormalizada.find("mostrar") != string::npos) return Intencion::Imprimir;
-	if (lineaNormalizada.find("crear una lista") != string::npos) return Intencion::CrearLista;
 	return Intencion::Desconocida;
+}
+
+string ConvertidorCodigo::emitirComenzar(string lineaOriginal)
+{
+	return "#include <iostream>\n#include <vector>\nusing namespace std;\n\nint main() {";
+}
+
+string ConvertidorCodigo::emitirTerminar(string lineaOriginal)
+{
+	return "return 0;\n}";
 }
 
 string ConvertidorCodigo::emitirSuma(string lineaOriginal) {
@@ -197,8 +208,9 @@ string ConvertidorCodigo::emitirImprimir(string lineaOriginal) {
 
 	vector<string> palabras = Utilidad::dividirEnPalabras(lineaOriginal);
 	for (const string& palabra : palabras) {
-		if (!buscarVariable(palabra).empty()) {
-			return "cout << " + palabra + " << endl;";
+		Variable* var = buscarVariable(palabra);
+		if (var != nullptr) {
+			return "cout << " + var->nombre + " << endl;";
 		}
 	}
 
@@ -207,25 +219,136 @@ string ConvertidorCodigo::emitirImprimir(string lineaOriginal) {
 
 string ConvertidorCodigo::emitirCrearLista(string lineaOriginal) {
 	Utilidad util;
+	vector<string> palabras = util.dividirEnPalabras(lineaOriginal);
 	vector<int> numeros = util.extraerNumerosEnteros(lineaOriginal);
 
+	string tipo = "";
+	for (const string& p : palabras) {
+		if (p == "entero" || p == "enteros" || p == "int") tipo = "int";
+		else if (p == "decimal" || p == "decimales" || p == "float") tipo = "float";
+		else if (p == "texto" || p == "string" || p == "strings") tipo = "string";
+	}
+	if (tipo.empty()) {
+		return "// Error: no se indicó tipo de la lista en -> " + lineaOriginal;
+	}
+
 	if (numeros.empty()) {
-		return "// Error: no se encontró tamaño de la lista -> " + lineaOriginal;
+		return "// Error: no se indicó tamaño de la lista en -> " + lineaOriginal;
 	}
-
 	int tamano = numeros[0];
-	string nombreLista = "lista" + to_string(contadorLista++);
 
-	string codigo = "vector<int> " + nombreLista + "(" + to_string(tamano) + ");\n";
-
-	if (lineaOriginal.find("mostrar") != string::npos || lineaOriginal.find("imprimir") != string::npos) {
-		codigo += "for (int i = 0; i < " + nombreLista + ".size(); i++) {\n";
-		codigo += "    cout << " + nombreLista + "[i] << endl;\n";
-		codigo += "}";
+	string nombreLista = "";
+	for (size_t i = 0; i < palabras.size(); i++) {
+		if (palabras[i] == "llamada" && i + 1 < palabras.size()) {
+			nombreLista = palabras[i + 1];
+			break;
+		}
+	}
+	if (nombreLista.empty()) {
+		if (!palabras.empty()) {
+			nombreLista = palabras.back();
+		}
 	}
 
-	return codigo;
+	if (nombreLista == "enteros" || nombreLista == "decimales" ||
+		nombreLista == "strings" || nombreLista == "elementos" ||
+		nombreLista == "valores") {
+		return "// Error: falta nombre para la lista en -> " + lineaOriginal;
+	}
+
+	Variable nueva;
+	nueva.tipo = tipo;
+	nueva.nombre = nombreLista;
+	nueva.valor = "";
+	nueva.tamano = tamano;
+	nueva.esLista = true;
+	variablesDeclaradas.push_back(nueva);
+
+	return "vector<" + tipo + "> " + nombreLista + "(" + to_string(tamano) + ");";
 }
+
+string ConvertidorCodigo::emitirAsignarElementoLista(string lineaOriginal)
+{
+	Utilidad util;
+	vector<string> palabras = util.dividirEnPalabras(lineaOriginal);
+
+	string nombreLista = "";
+	for (size_t i = 0; i < palabras.size(); i++) {
+		if (palabras[i] == "lista" && i + 1 < palabras.size()) {
+			nombreLista = palabras[i + 1];
+			break;
+		}
+	}
+	if (nombreLista.empty()) {
+		return "// Error: falta nombre de lista en -> " + lineaOriginal;
+	}
+
+	Variable* listaEncontrada = nullptr;
+	for (auto& v : variablesDeclaradas) {
+		if (v.nombre == nombreLista && v.esLista) {
+			listaEncontrada = &v;
+			break;
+		}
+	}
+	if (!listaEncontrada) {
+		return "// Error: la lista '" + nombreLista + "' no fue declarada antes.";
+	}
+
+	int indice = -1;
+	for (size_t i = 0; i < palabras.size(); i++) {
+		string p = palabras[i];
+		if (p == "primer" || p == "primero") indice = 0;
+		else if (p == "segundo") indice = 1;
+		else if (p == "tercero") indice = 2;
+		else if (p == "cuarto") indice = 3;
+		else if (p == "quinto") indice = 4;
+		else if (p == "sexto") indice = 5;
+		else if (p == "séptimo" || p == "septimo") indice = 6;
+		else if (p == "octavo") indice = 7;
+		else if (p == "noveno") indice = 8;
+		else if (p == "décimo" || p == "decimo") indice = 9;
+	}
+	if (indice == -1) {
+		vector<int> numeros = util.extraerNumerosEnteros(lineaOriginal);
+		if (!numeros.empty()) {
+			indice = numeros[0] - 1;
+		}
+	}
+	if (indice == -1) {
+		return "// Error: índice no reconocido en -> " + lineaOriginal;
+	}
+
+	if (indice < 0 || indice >= listaEncontrada->tamano) {
+		return "// Error: el índice " + to_string(indice + 1) +
+			" excede el tamaño de la lista '" + nombreLista +
+			"' (máx: " + to_string(listaEncontrada->tamano) + ").";
+	}
+
+	string valorAsignado = "";
+	if (listaEncontrada->tipo == "string") {
+		size_t posComilla = lineaOriginal.find("\"");
+		if (posComilla != string::npos) {
+			size_t ultimaComilla = lineaOriginal.find_last_of("\"");
+			if (ultimaComilla > posComilla) {
+				valorAsignado = lineaOriginal.substr(posComilla, ultimaComilla - posComilla + 1);
+			}
+		}
+		if (valorAsignado.empty()) {
+			return "// Error: la lista '" + nombreLista + "' es de tipo string, pero no se encontró texto válido en -> " + lineaOriginal;
+		}
+	}
+	else {
+		vector<int> numeros = util.extraerNumerosEnteros(lineaOriginal);
+		if (numeros.empty()) {
+			return "// Error: la lista '" + nombreLista + "' es de tipo " + listaEncontrada->tipo + ", pero no se encontró número en -> " + lineaOriginal;
+		}
+		valorAsignado = to_string(numeros[0]);
+	}
+
+	return nombreLista + "[" + to_string(indice) + "] = " + valorAsignado + ";";
+}
+
+
 
 string ConvertidorCodigo::emitirRepetir(string lineaOriginal) {
 	Utilidad util;
@@ -262,13 +385,15 @@ string ConvertidorCodigo::emitirMientras(string lineaOriginal) {
 	string nombreVar = "numero";
 	vector<string> palabras = util.dividirEnPalabras(lineaOriginal);
 	for (const string& palabra : palabras) {
-		if (!buscarVariable(palabra).empty()) {
-			nombreVar = palabra;
+		Variable* var = buscarVariable(palabra);
+		if (var != nullptr && !var->esLista) {
+			nombreVar = var->nombre;
 			break;
 		}
 	}
 
-	if (buscarVariable(nombreVar).empty()) {
+	Variable* var = buscarVariable(nombreVar);
+	if (var == nullptr) {
 		return "// Error: la variable '" + nombreVar + "' no fue declarada antes.";
 	}
 
@@ -294,25 +419,23 @@ string ConvertidorCodigo::emitirSi(string lineaOriginal)
 		return "// Error: no se encontró número de comparación en -> " + lineaOriginal;
 	}
 
-	string variable = "numero"; // por defecto
-	string operador = ">";      // por defecto
+	string variable = "numero";
+	string operador = ">";
 
-	// Detectar variable mencionada
 	for (const string& palabra : palabras) {
-		if (!buscarVariable(palabra).empty()) {
-			variable = palabra;
+		Variable* var = buscarVariable(palabra);
+		if (var != nullptr && !var->esLista) {
+			variable = var->nombre;
 			break;
 		}
 	}
 
-	// Detectar operador
 	if (lineaOriginal.find("mayor que") != string::npos) operador = ">";
 	else if (lineaOriginal.find("menor que") != string::npos) operador = "<";
 	else if (lineaOriginal.find("igual a") != string::npos) operador = "==";
 
 	int valor = numeros[0];
 
-	// Buscar mensaje entre comillas
 	string mensaje = "\"Mensaje\"";
 	size_t posComilla = lineaOriginal.find("\"");
 	if (posComilla != string::npos) {
@@ -392,12 +515,36 @@ string ConvertidorCodigo::emitirCrearVariable(string lineaOriginal) {
 	return tipo + " " + nombre + " = " + valor + ";";
 }
 
-
-string ConvertidorCodigo::buscarVariable(string nombre) {
-	for (const auto& v : variablesDeclaradas) {
+Variable* ConvertidorCodigo::buscarVariable(string nombre) {
+	for (auto& v : variablesDeclaradas) {
 		if (v.nombre == nombre) {
-			return v.nombre;
+			return &v;
 		}
 	}
-	return "";
+	return nullptr;
+}
+
+int ConvertidorCodigo::obtenerIndiceDesdePalabraONumero(string lineaOriginal, vector<string> palabras)
+{
+	for (size_t i = 0; i < palabras.size(); i++) {
+		string p = palabras[i];
+		if (p == "primer" || p == "primero") return 0;
+		if (p == "segundo") return 1;
+		if (p == "tercero") return 2;
+		if (p == "cuarto") return 3;
+		if (p == "quinto") return 4;
+		if (p == "sexto") return 5;
+		if (p == "séptimo" || p == "septimo") return 6;
+		if (p == "octavo") return 7;
+		if (p == "noveno") return 8;
+		if (p == "décimo" || p == "decimo") return 9;
+	}
+
+	Utilidad util;
+	vector<int> numeros = util.extraerNumerosEnteros(lineaOriginal);
+	if (!numeros.empty()) {
+		return numeros[0] - 1;
+	}
+
+	return -1;
 }

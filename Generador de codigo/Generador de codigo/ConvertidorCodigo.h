@@ -6,66 +6,77 @@
 using namespace std;
 
 enum class Intencion {
-    Suma,
-    Resta,
-    Multiplicacion,
-    Division,
-    Imprimir,
-    CrearLista,
-    Si,
-    Sino,
-    Para,
+	Suma,
+	Resta,
+	Multiplicacion,
+	Division,
+	Imprimir,
+	CrearLista,
+	AsignarElementoLista,
+	LlenarLista,
+	MostrarLista,
+	Si,
+	Sino,
+	Para,
 	Repetir,
-    Mientras,
-    Asignacion,
-    CrearVariable,
-    Desconocida
+	Mientras,
+	Asignacion,
+	CrearVariable,
+	Comenzar,
+	Terminar,
+	Desconocida
 };
 
 struct Variable {
-    string tipo;
-    string nombre;
-    string valor;
+	string tipo;
+	string nombre;
+	string valor;
+	int tamano = 0;
+	bool esLista = false;
 };
 
 class ConvertidorCodigo
 {
 private:
-    string textoEntrada;
-    string codigoGenerado;
-    vector<Mensaje> mensajes;
-    vector<Variable> variablesDeclaradas;
+	string textoEntrada;
+	string codigoGenerado;
+	vector<Mensaje> mensajes;
+	vector<Variable> variablesDeclaradas;
 
-    int contadorSuma = 0;
-    int contadorResta = 0;
-    int contadorMultiplicacion = 0;
-    int contadorDivision = 0;
+	int contadorSuma = 0;
+	int contadorResta = 0;
+	int contadorMultiplicacion = 0;
+	int contadorDivision = 0;
 	int contadorLista = 0;
 
-    Intencion detectarIntencion(string lineaNormalizada);
+	Intencion detectarIntencion(string lineaNormalizada);
 
-    string emitirSuma(string lineaOriginal);
-    string emitirResta(string lineaOriginal);
-    string emitirMultiplicacion(string lineaOriginal);
-    string emitirDivision(string lineaOriginal);
-    string emitirImprimir(string lineaOriginal);
-    string emitirCrearLista(string lineaOriginal);
+	string emitirComenzar(string lineaOriginal);
+	string emitirTerminar(string lineaOriginal);
+	string emitirSuma(string lineaOriginal);
+	string emitirResta(string lineaOriginal);
+	string emitirMultiplicacion(string lineaOriginal);
+	string emitirDivision(string lineaOriginal);
+	string emitirImprimir(string lineaOriginal);
+	string emitirCrearLista(string lineaOriginal);
+	string emitirAsignarElementoLista(string lineaOriginal);
 	string emitirRepetir(string lineaOriginal);
 	string emitirMientras(string lineaOriginal);
 	string emitirSi(string lineaOriginal);
 	string emitirCrearVariable(string lineaOriginal);
-    string buscarVariable(string nombre);
+	Variable* buscarVariable(string nombre);
+	int  obtenerIndiceDesdePalabraONumero(string lineaOriginal, vector<string> palabras);
 public:
-    ConvertidorCodigo();
-    ConvertidorCodigo(string textoEntrada);
+	ConvertidorCodigo();
+	ConvertidorCodigo(string textoEntrada);
 
-    void setTexto(string nuevoTexto);
-    string getTexto();
+	void setTexto(string nuevoTexto);
+	string getTexto();
 
-    string getCodigoGenerado();
-    vector<Mensaje> getMensajes();
+	string getCodigoGenerado();
+	vector<Mensaje> getMensajes();
 
-    bool procesar();
-    string construirPrograma();
+	bool procesar();
+	string construirPrograma();
 };
 
