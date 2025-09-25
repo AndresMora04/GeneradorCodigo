@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConvertidorCodigo.cpp" />
+    <ClCompile Include="LogIn.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainView.cpp" />
     <ClCompile Include="Mensaje.cpp" />
@@ -21,10 +22,12 @@
     <QtMoc Include="MainView.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtUic Include="LogIn.ui" />
     <QtUic Include="MainView.ui" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConvertidorCodigo.h" />
+    <QtMoc Include="LogIn.h" />
     <ClInclude Include="Mensaje.h" />
     <ClInclude Include="Utilidad.h" />
   </ItemGroup>

@@ -38,14 +38,23 @@
     <ClCompile Include="Utilidad.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LogIn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="MainView.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="LogIn.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="MainView.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="LogIn.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>

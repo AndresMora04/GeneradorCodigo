@@ -1,36 +1,23 @@
 ﻿   Qt/MSBuild: 3.4.1.0
   Reading Qt configuration (C:/Qt/6.9.1/msvc2022_64/bin/qmake)
    Qt: 6.9.1
-  ConvertidorCodigo.cpp
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x87e that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x88c that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x896 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x945 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x94b that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x114f that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x1424 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x16f5 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x19d7 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x1e8c that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x20e7 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x2152 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x2158 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x290d that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x2995 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x2a84 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x2b09 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x2b40 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x2b6b that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x2d81 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x2d8a that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x2e8a that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x300b that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x300f that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x32c1 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x32c7 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x32d7 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x36fb that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x3710 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x43d1 that is illegal in the current source character set (codepage 65001).
-C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\ConvertidorCodigo.cpp(1,1): warning C4828: The file contains a character starting at offset 0x4444 that is illegal in the current source character set (codepage 65001).
+  uic LogIn.ui
+  moc LogIn.h
+   Could not request license for qtframework:
+       Message: No valid license could be acquired.
+       Status code: 100
+   Cannot acquire license to use qtframework.
+   If you have a valid commercial license, please create a bug report to Qt Bugtracker:
+   https://bugreports.qt.io/projects/QLS
+   Attach the above details to the bug report.
+   Additionally, attach the qtlicd_log.txt file of the Qt License Service that can be found from the directory of this Qt installation.
+   On this system the log file path appears to be: "C:\Qt\Tools\LicenseService\qtlicd_log.txt".
+   To bypass the license check entirely, set the environment variable QTFRAMEWORK_BYPASS_LICENSE_CHECK with value 1.
+  LogIn.cpp
+  main.cpp
+C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\LogIn.cpp(1,1): warning C4828: The file contains a character starting at offset 0x142 that is illegal in the current source character set (codepage 65001).
+C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\LogIn.cpp(1,1): warning C4828: The file contains a character starting at offset 0x273 that is illegal in the current source character set (codepage 65001).
+C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\LogIn.cpp(1,1): warning C4828: The file contains a character starting at offset 0x2b5 that is illegal in the current source character set (codepage 65001).
+C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\Generador de codigo\LogIn.cpp(1,1): warning C4828: The file contains a character starting at offset 0x3a1 that is illegal in the current source character set (codepage 65001).
+  moc_LogIn.cpp
   Generador de codigo.vcxproj -> C:\Users\morit\OneDrive\Escritorio\Estructuras\GeneradorCodigo\Generador de codigo\x64\Debug\Generador de codigo.exe
