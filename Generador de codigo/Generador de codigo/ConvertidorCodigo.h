@@ -13,8 +13,10 @@ enum class Intencion {
 	Imprimir,
 	CrearLista,
 	AsignarElementoLista,
+	IngresarLista,
 	LlenarLista,
 	MostrarLista,
+	RecorrerLista,
 	Si,
 	Sino,
 	Para,
@@ -22,6 +24,7 @@ enum class Intencion {
 	Mientras,
 	Asignacion,
 	CrearVariable,
+	IngresarValor,
 	Comenzar,
 	Terminar,
 	Desconocida
@@ -59,13 +62,19 @@ private:
 	string emitirDivision(string lineaOriginal);
 	string emitirImprimir(string lineaOriginal);
 	string emitirCrearLista(string lineaOriginal);
+	string emitirIngresarLista(string lineaOriginal);
 	string emitirAsignarElementoLista(string lineaOriginal);
+	string emitirRecorrerLista(string lineaOriginal);
 	string emitirRepetir(string lineaOriginal);
 	string emitirMientras(string lineaOriginal);
 	string emitirSi(string lineaOriginal);
+	string emitirSino(string lineaOriginal);
 	string emitirCrearVariable(string lineaOriginal);
+	string emitirIngresarValor(string lineaOriginal);
 	Variable* buscarVariable(string nombre);
 	int  obtenerIndiceDesdePalabraONumero(string lineaOriginal, vector<string> palabras);
+	string normalizarPalabra(const string& palabra);
+	bool dentroDeBloque = false;
 public:
 	ConvertidorCodigo();
 	ConvertidorCodigo(string textoEntrada);
