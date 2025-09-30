@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QLabel" name="lbTitulo">
+     <widget class="QLabel" name="lbTitle">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
         <horstretch>0</horstretch>
@@ -32,7 +32,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QGroupBox" name="gboxInstrucciones">
+     <widget class="QGroupBox" name="gboxInstructions">
       <property name="title">
        <string>Instrucciones</string>
       </property>
@@ -41,13 +41,13 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <widget class="QTextEdit" name="txtInstrucciones"/>
+        <widget class="QTextEdit" name="txtInstructions"/>
        </item>
       </layout>
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="btnIngresar">
+     <widget class="QPushButton" name="btnLogin">
       <property name="text">
        <string>Ingresar</string>
       </property>

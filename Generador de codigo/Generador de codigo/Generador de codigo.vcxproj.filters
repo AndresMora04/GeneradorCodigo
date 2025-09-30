@@ -29,16 +29,19 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ConvertidorCodigo.cpp">
+    <ClCompile Include="CodeConverter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Mensaje.cpp">
+    <ClCompile Include="Message.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Utilidad.cpp">
+    <ClCompile Include="Utility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LogIn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Variable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -59,13 +62,19 @@
     </QtUic>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ConvertidorCodigo.h">
+    <ClInclude Include="CodeConverter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Mensaje.h">
+    <ClInclude Include="Message.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Utilidad.h">
+    <ClInclude Include="Utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Intention.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Variable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

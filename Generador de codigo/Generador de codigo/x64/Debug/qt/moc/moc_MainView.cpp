@@ -40,18 +40,18 @@ template <> constexpr inline auto MainView::qt_create_metaobjectdata<qt_meta_tag
     namespace QMC = QtMocConstants;
     QtMocHelpers::StringRefStorage qt_stringData {
         "MainView",
-        "onCargar",
+        "onLoadFile",
         "",
-        "onConvertir",
-        "onGuardar"
+        "onConvert",
+        "onSaveFile"
     };
 
     QtMocHelpers::UintData qt_methods {
-        // Slot 'onCargar'
+        // Slot 'onLoadFile'
         QtMocHelpers::SlotData<void()>(1, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'onConvertir'
+        // Slot 'onConvert'
         QtMocHelpers::SlotData<void()>(3, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'onGuardar'
+        // Slot 'onSaveFile'
         QtMocHelpers::SlotData<void()>(4, 2, QMC::AccessPrivate, QMetaType::Void),
     };
     QtMocHelpers::UintData qt_properties {
@@ -76,9 +76,9 @@ void MainView::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, vo
     auto *_t = static_cast<MainView *>(_o);
     if (_c == QMetaObject::InvokeMetaMethod) {
         switch (_id) {
-        case 0: _t->onCargar(); break;
-        case 1: _t->onConvertir(); break;
-        case 2: _t->onGuardar(); break;
+        case 0: _t->onLoadFile(); break;
+        case 1: _t->onConvert(); break;
+        case 2: _t->onSaveFile(); break;
         default: ;
         }
     }

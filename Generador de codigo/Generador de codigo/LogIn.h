@@ -2,7 +2,7 @@
 
 #include <QMainWindow>
 #include "ui_LogIn.h"
-#include "MainView.h"  
+#include "MainView.h"
 
 class LogIn : public QMainWindow
 {
@@ -13,7 +13,7 @@ public:
     ~LogIn();
 
 private slots:
-    void onIngresar();   
+    void onLogin();
 
 private:
     Ui::LogInView ui;

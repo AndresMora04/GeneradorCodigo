@@ -30,14 +30,14 @@ public:
     QWidget *centralWidget;
     QVBoxLayout *verticalLayout_2;
     QVBoxLayout *mainView;
-    QLabel *lbTitulo;
+    QLabel *lbTitle;
     QHBoxLayout *hboxTextos;
-    QTextEdit *txtCargado;
-    QTextEdit *txtConvertido;
+    QTextEdit *txtInput;
+    QTextEdit *txtOutput;
     QHBoxLayout *hboxBotones;
-    QPushButton *btnCargar;
-    QPushButton *btnConvertir;
-    QPushButton *btnGuardar;
+    QPushButton *btnLoad;
+    QPushButton *btnConvert;
+    QPushButton *btnSave;
     QMenuBar *menuBar;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
@@ -65,31 +65,31 @@ public:
         mainView->setObjectName("mainView");
         mainView->setSizeConstraint(QLayout::SizeConstraint::SetDefaultConstraint);
         mainView->setContentsMargins(10, 10, 10, 10);
-        lbTitulo = new QLabel(centralWidget);
-        lbTitulo->setObjectName("lbTitulo");
+        lbTitle = new QLabel(centralWidget);
+        lbTitle->setObjectName("lbTitle");
         QSizePolicy sizePolicy1(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Preferred);
         sizePolicy1.setHorizontalStretch(0);
         sizePolicy1.setVerticalStretch(0);
-        sizePolicy1.setHeightForWidth(lbTitulo->sizePolicy().hasHeightForWidth());
-        lbTitulo->setSizePolicy(sizePolicy1);
-        lbTitulo->setLayoutDirection(Qt::LayoutDirection::LeftToRight);
-        lbTitulo->setAlignment(Qt::AlignmentFlag::AlignCenter);
+        sizePolicy1.setHeightForWidth(lbTitle->sizePolicy().hasHeightForWidth());
+        lbTitle->setSizePolicy(sizePolicy1);
+        lbTitle->setLayoutDirection(Qt::LayoutDirection::LeftToRight);
+        lbTitle->setAlignment(Qt::AlignmentFlag::AlignCenter);
 
-        mainView->addWidget(lbTitulo);
+        mainView->addWidget(lbTitle);
 
         hboxTextos = new QHBoxLayout();
         hboxTextos->setSpacing(6);
         hboxTextos->setObjectName("hboxTextos");
         hboxTextos->setSizeConstraint(QLayout::SizeConstraint::SetDefaultConstraint);
-        txtCargado = new QTextEdit(centralWidget);
-        txtCargado->setObjectName("txtCargado");
+        txtInput = new QTextEdit(centralWidget);
+        txtInput->setObjectName("txtInput");
 
-        hboxTextos->addWidget(txtCargado);
+        hboxTextos->addWidget(txtInput);
 
-        txtConvertido = new QTextEdit(centralWidget);
-        txtConvertido->setObjectName("txtConvertido");
+        txtOutput = new QTextEdit(centralWidget);
+        txtOutput->setObjectName("txtOutput");
 
-        hboxTextos->addWidget(txtConvertido);
+        hboxTextos->addWidget(txtOutput);
 
         hboxTextos->setStretch(0, 1);
         hboxTextos->setStretch(1, 1);
@@ -99,20 +99,20 @@ public:
         hboxBotones = new QHBoxLayout();
         hboxBotones->setSpacing(6);
         hboxBotones->setObjectName("hboxBotones");
-        btnCargar = new QPushButton(centralWidget);
-        btnCargar->setObjectName("btnCargar");
+        btnLoad = new QPushButton(centralWidget);
+        btnLoad->setObjectName("btnLoad");
 
-        hboxBotones->addWidget(btnCargar);
+        hboxBotones->addWidget(btnLoad);
 
-        btnConvertir = new QPushButton(centralWidget);
-        btnConvertir->setObjectName("btnConvertir");
+        btnConvert = new QPushButton(centralWidget);
+        btnConvert->setObjectName("btnConvert");
 
-        hboxBotones->addWidget(btnConvertir);
+        hboxBotones->addWidget(btnConvert);
 
-        btnGuardar = new QPushButton(centralWidget);
-        btnGuardar->setObjectName("btnGuardar");
+        btnSave = new QPushButton(centralWidget);
+        btnSave->setObjectName("btnSave");
 
-        hboxBotones->addWidget(btnGuardar);
+        hboxBotones->addWidget(btnSave);
 
 
         mainView->addLayout(hboxBotones);
@@ -140,10 +140,10 @@ public:
     void retranslateUi(QMainWindow *MainViewClass)
     {
         MainViewClass->setWindowTitle(QCoreApplication::translate("MainViewClass", "MainView", nullptr));
-        lbTitulo->setText(QCoreApplication::translate("MainViewClass", "Convertidor de lenguaje natural", nullptr));
-        btnCargar->setText(QCoreApplication::translate("MainViewClass", "Cargar", nullptr));
-        btnConvertir->setText(QCoreApplication::translate("MainViewClass", "Convertir", nullptr));
-        btnGuardar->setText(QCoreApplication::translate("MainViewClass", "Guardar", nullptr));
+        lbTitle->setText(QCoreApplication::translate("MainViewClass", "Convertidor de lenguaje natural", nullptr));
+        btnLoad->setText(QCoreApplication::translate("MainViewClass", "Cargar", nullptr));
+        btnConvert->setText(QCoreApplication::translate("MainViewClass", "Convertir", nullptr));
+        btnSave->setText(QCoreApplication::translate("MainViewClass", "Guardar", nullptr));
     } // retranslateUi
 
 };

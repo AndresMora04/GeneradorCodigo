@@ -45,7 +45,7 @@
        <number>10</number>
       </property>
       <item>
-       <widget class="QLabel" name="lbTitulo">
+       <widget class="QLabel" name="lbTitle">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
           <horstretch>0</horstretch>
@@ -69,31 +69,31 @@
          <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
         </property>
         <item>
-         <widget class="QTextEdit" name="txtCargado"/>
+         <widget class="QTextEdit" name="txtInput"/>
         </item>
         <item>
-         <widget class="QTextEdit" name="txtConvertido"/>
+         <widget class="QTextEdit" name="txtOutput"/>
         </item>
        </layout>
       </item>
       <item>
        <layout class="QHBoxLayout" name="hboxBotones" stretch="0,0,0">
         <item>
-         <widget class="QPushButton" name="btnCargar">
+         <widget class="QPushButton" name="btnLoad">
           <property name="text">
            <string>Cargar</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="btnConvertir">
+         <widget class="QPushButton" name="btnConvert">
           <property name="text">
            <string>Convertir</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="btnGuardar">
+         <widget class="QPushButton" name="btnSave">
           <property name="text">
            <string>Guardar</string>
           </property>

@@ -9,23 +9,24 @@
 #include <iostream>
 #include <string>
 #include "ui_MainView.h"
-#include "ConvertidorCodigo.h"
+#include "CodeConverter.h"
+
 using namespace std;
 
 class MainView : public QMainWindow
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	MainView(QWidget *parent = nullptr);
-	~MainView();
+    MainView(QWidget* parent = nullptr);
+    ~MainView();
+
 private slots:
-	void onCargar();
-	void onConvertir();
-	void onGuardar();
+    void onLoadFile();
+    void onConvert();
+    void onSaveFile();
+
 private:
-	Ui::MainViewClass ui;
-	ConvertidorCodigo convertidor;
-
+    Ui::MainViewClass ui;
+    CodeConverter converter;
 };
-

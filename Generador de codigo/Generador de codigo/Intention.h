@@ -1,0 +1,27 @@
+#pragma once
+#include <string>
+
+enum class Intention {
+    sum,
+    subtract,
+    multiply,
+    divide,
+    print,
+    createList,
+    assignListElement,
+    inputList,
+    fillList,
+    showList,
+    iterateList,
+    ifBlock,
+    elseBlock,
+    forLoop,
+    repeatLoop,
+    whileLoop,
+    assign,
+    createVariable,
+    inputValue,
+    startProgram,
+    endProgram,
+    unknown
+};

@@ -4,84 +4,82 @@ MainView::MainView(QWidget* parent)
     : QMainWindow(parent)
 {
     ui.setupUi(this);
-    setWindowTitle("Convertidor Lenguaje Natural → C++");
+    setWindowTitle("Natural Language to C++ Converter");
 
-    connect(ui.btnCargar, &QPushButton::clicked, this, &MainView::onCargar);
-    connect(ui.btnConvertir, &QPushButton::clicked, this, &MainView::onConvertir);
-    connect(ui.btnGuardar, &QPushButton::clicked, this, &MainView::onGuardar);
+    connect(ui.btnLoad, &QPushButton::clicked, this, &MainView::onLoadFile);
+    connect(ui.btnConvert, &QPushButton::clicked, this, &MainView::onConvert);
+    connect(ui.btnSave, &QPushButton::clicked, this, &MainView::onSaveFile);
 }
 
 MainView::~MainView() {}
 
-void MainView::onCargar()
+void MainView::onLoadFile()
 {
-  QString ruta = QFileDialog::getOpenFileName(
+    QString path = QFileDialog::getOpenFileName(
         this,
-        "Seleccionar archivo",
+        "Select File",
         QDir::homePath(),
-        "Archivos de texto (*.txt)"
+        "Text Files (*.txt)"
     );
 
-  if (ruta.isEmpty()) return;
+    if (path.isEmpty()) return;
 
-    QFile archivo(ruta);
-    if (!archivo.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::critical(this, "Error", "No se pudo abrir el archivo.");
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Error", "Could not open the file.");
         return;
     }
 
-    QTextStream in(&archivo);
-    QString contenido = in.readAll();
-    archivo.close();
+    QTextStream in(&file);
+    QString content = in.readAll();
+    file.close();
 
-    ui.txtCargado->setPlainText(contenido);
+    ui.txtInput->setPlainText(content);
 
-    string texto = contenido.toStdString();
-    convertidor.setTexto(texto);
+    string text = content.toStdString();
+    converter.setInputText(text);
 
-    qDebug().noquote() << "Archivo cargado:\n" << contenido;
-
+    qDebug().noquote() << "File loaded:\n" << content;
 }
 
-void MainView::onConvertir()
+void MainView::onConvert()
 {
-    string texto = ui.txtCargado->toPlainText().toStdString();
-    convertidor.setTexto(texto);
+    string text = ui.txtInput->toPlainText().toStdString();
+    converter.setInputText(text);
 
-    if (convertidor.procesar()) {
-        string codigo = convertidor.construirPrograma();
-        ui.txtConvertido->setPlainText(QString::fromStdString(codigo));
-        ui.btnGuardar->setEnabled(true);
-        statusBar()->showMessage("Conversión exitosa", 3000);
+    if (converter.process()) {
+        string code = converter.buildProgram();
+        ui.txtOutput->setPlainText(QString::fromStdString(code));
+        ui.btnSave->setEnabled(true);
+        statusBar()->showMessage("Conversion successful", 3000);
     }
     else {
-        ui.txtConvertido->setPlainText("// No se pudo convertir el texto cargado o escrito.\n");
-        ui.btnGuardar->setEnabled(false);
-        statusBar()->showMessage("Error en la conversión", 3000);
+        ui.txtOutput->setPlainText("// Could not convert the provided text.\n");
+        ui.btnSave->setEnabled(false);
+        statusBar()->showMessage("Conversion failed", 3000);
     }
 }
 
-void MainView::onGuardar()
+void MainView::onSaveFile()
 {
-
-    QString ruta = QFileDialog::getSaveFileName(
+    QString path = QFileDialog::getSaveFileName(
         this,
-        "Guardar C++ generado",
-        QDir::homePath() + "/ProgramaGenerado.cpp",
-        "Código C++ (*.cpp)"
+        "Save Generated C++ File",
+        QDir::homePath() + "/GeneratedProgram.cpp",
+        "C++ Code (*.cpp)"
     );
 
-    if (ruta.isEmpty()) return;
+    if (path.isEmpty()) return;
 
-    QFile archivo(ruta);
-    if (!archivo.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::critical(this, "Error", "No se pudo guardar el archivo.");
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Error", "Could not save the file.");
         return;
     }
 
-    QTextStream out(&archivo);
-    out << ui.txtConvertido->toPlainText();
-    archivo.close();
+    QTextStream out(&file);
+    out << ui.txtOutput->toPlainText();
+    file.close();
 
-    statusBar()->showMessage("Archivo guardado en " + ruta, 3000);
+    statusBar()->showMessage("File saved at " + path, 3000);
 }
