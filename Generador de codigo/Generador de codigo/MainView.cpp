@@ -79,15 +79,10 @@ void MainView::onConvert()
 
 void MainView::onSaveFile()
 {
-	QString path = QFileDialog::getSaveFileName(
-		this,
-		"Save Generated C++ File",
-		QDir::homePath() + "/GeneratedProgram.cpp",
-		"C++ Code (*.cpp)"
-	);
+	QString basePath = "C:/GeneratedProject";
+	ensureProjectStructure(basePath);
 
-	if (path.isEmpty()) return;
-
+	QString path = basePath + "/GeneratedProgram.cpp";
 	QFile file(path);
 	if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		QMessageBox::critical(this, "Error", "Could not save the file.");
@@ -99,4 +94,155 @@ void MainView::onSaveFile()
 	file.close();
 
 	statusBar()->showMessage("File saved at " + path, 3000);
+}
+
+void MainView::ensureProjectStructure(const QString& folderPath) {
+	QDir dir(folderPath);
+	if (!dir.exists()) {
+		dir.mkpath(".");
+	}
+
+	QString slnPath = folderPath + "/GeneratedProject.sln";
+	if (!QFile::exists(slnPath)) {
+		QFile slnFile(slnPath);
+		if (slnFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			QTextStream out(&slnFile);
+			out << "Microsoft Visual Studio Solution File, Format Version 12.00\n";
+			out << "# Visual Studio Version 17\n";
+			out << "VisualStudioVersion = 17.14.36401.2 d17.14\n";
+			out << "MinimumVisualStudioVersion = 10.0.40219.1\n";
+			out << "Project(\"{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}\") = \"GeneratedProject\", \"GeneratedProject.vcxproj\", \"{GUID-GENERATED}\"\n";
+			out << "EndProject\n";
+			out << "Global\n";
+			out << "    GlobalSection(SolutionConfigurationPlatforms) = preSolution\n";
+			out << "        Debug|x64 = Debug|x64\n";
+			out << "        Release|x64 = Release|x64\n";
+			out << "        Debug|x86 = Debug|x86\n";
+			out << "        Release|x86 = Release|x86\n";
+			out << "    EndGlobalSection\n";
+			out << "    GlobalSection(ProjectConfigurationPlatforms) = postSolution\n";
+			out << "        {GUID-GENERATED}.Debug|x64.ActiveCfg = Debug|x64\n";
+			out << "        {GUID-GENERATED}.Debug|x64.Build.0 = Debug|x64\n";
+			out << "        {GUID-GENERATED}.Release|x64.ActiveCfg = Release|x64\n";
+			out << "        {GUID-GENERATED}.Release|x64.Build.0 = Release|x64\n";
+			out << "        {GUID-GENERATED}.Debug|x86.ActiveCfg = Debug|Win32\n";
+			out << "        {GUID-GENERATED}.Debug|x86.Build.0 = Debug|Win32\n";
+			out << "        {GUID-GENERATED}.Release|x86.ActiveCfg = Release|Win32\n";
+			out << "        {GUID-GENERATED}.Release|x86.Build.0 = Release|Win32\n";
+			out << "    EndGlobalSection\n";
+			out << "    GlobalSection(SolutionProperties) = preSolution\n";
+			out << "        HideSolutionNode = FALSE\n";
+			out << "    EndGlobalSection\n";
+			out << "    GlobalSection(ExtensibilityGlobals) = postSolution\n";
+			out << "        SolutionGuid = {NUEVO-GUID}\n";
+			out << "    EndGlobalSection\n";
+			out << "EndGlobal\n";
+		}
+	}
+
+	QString projPath = folderPath + "/GeneratedProject.vcxproj";
+	if (!QFile::exists(projPath)) {
+		QFile projFile(projPath);
+		if (projFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			QTextStream out(&projFile);
+			out << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+			out << "<Project DefaultTargets=\"Build\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">\n";
+
+			out << "  <ItemGroup Label=\"ProjectConfigurations\">\n";
+			out << "    <ProjectConfiguration Include=\"Debug|Win32\">\n";
+			out << "      <Configuration>Debug</Configuration>\n";
+			out << "      <Platform>Win32</Platform>\n";
+			out << "    </ProjectConfiguration>\n";
+			out << "    <ProjectConfiguration Include=\"Release|Win32\">\n";
+			out << "      <Configuration>Release</Configuration>\n";
+			out << "      <Platform>Win32</Platform>\n";
+			out << "    </ProjectConfiguration>\n";
+			out << "    <ProjectConfiguration Include=\"Debug|x64\">\n";
+			out << "      <Configuration>Debug</Configuration>\n";
+			out << "      <Platform>x64</Platform>\n";
+			out << "    </ProjectConfiguration>\n";
+			out << "    <ProjectConfiguration Include=\"Release|x64\">\n";
+			out << "      <Configuration>Release</Configuration>\n";
+			out << "      <Platform>x64</Platform>\n";
+			out << "    </ProjectConfiguration>\n";
+			out << "  </ItemGroup>\n";
+
+			out << "  <PropertyGroup Label=\"Globals\">\n";
+			out << "    <VCProjectVersion>17.0</VCProjectVersion>\n";
+			out << "    <Keyword>Win32Proj</Keyword>\n";
+			out << "    <ProjectGuid>{GUID-GENERATED}</ProjectGuid>\n";
+			out << "    <RootNamespace>GeneratedProject</RootNamespace>\n";
+			out << "    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>\n";
+			out << "  </PropertyGroup>\n";
+
+			out << "  <Import Project=\"$(VCTargetsPath)\\Microsoft.Cpp.Default.props\" />\n";
+
+			out << "  <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\" Label=\"Configuration\">\n";
+			out << "    <ConfigurationType>Application</ConfigurationType>\n";
+			out << "    <UseDebugLibraries>true</UseDebugLibraries>\n";
+			out << "    <PlatformToolset>v143</PlatformToolset>\n";
+			out << "    <CharacterSet>Unicode</CharacterSet>\n";
+			out << "  </PropertyGroup>\n";
+
+			out << "  <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\" Label=\"Configuration\">\n";
+			out << "    <ConfigurationType>Application</ConfigurationType>\n";
+			out << "    <UseDebugLibraries>false</UseDebugLibraries>\n";
+			out << "    <PlatformToolset>v143</PlatformToolset>\n";
+			out << "    <WholeProgramOptimization>true</WholeProgramOptimization>\n";
+			out << "    <CharacterSet>Unicode</CharacterSet>\n";
+			out << "  </PropertyGroup>\n";
+
+			out << "  <Import Project=\"$(VCTargetsPath)\\Microsoft.Cpp.props\" />\n";
+			out << "  <Import Project=\"$(VCTargetsPath)\\Microsoft.Cpp.targets\" />\n";
+
+			out << "  <ItemGroup>\n";
+			out << "    <ClCompile Include=\"GeneratedProgram.cpp\" />\n";
+			out << "  </ItemGroup>\n";
+
+			out << "</Project>\n";
+		}
+	}
+
+	QString filtersPath = folderPath + "/GeneratedProject.vcxproj.filters";
+	if (!QFile::exists(filtersPath)) {
+		QFile filtersFile(filtersPath);
+		if (filtersFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			QTextStream out(&filtersFile);
+			out << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+			out << "<Project ToolsVersion=\"4.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">\n";
+			out << "  <ItemGroup>\n";
+			out << "    <ClCompile Include=\"GeneratedProgram.cpp\">\n";
+			out << "      <Filter>Source Files</Filter>\n";
+			out << "    </ClCompile>\n";
+			out << "  </ItemGroup>\n";
+			out << "  <ItemGroup>\n";
+			out << "    <Filter Include=\"Source Files\">\n";
+			out << "      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>\n";
+			out << "      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>\n";
+			out << "    </Filter>\n";
+			out << "    <Filter Include=\"Header Files\">\n";
+			out << "      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>\n";
+			out << "      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>\n";
+			out << "    </Filter>\n";
+			out << "  </ItemGroup>\n";
+			out << "</Project>\n";
+			filtersFile.close();
+		}
+	}
+
+	QString userPath = folderPath + "/GeneratedProject.vcxproj.user";
+	if (!QFile::exists(userPath)) {
+		QFile userFile(userPath);
+		if (userFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			QTextStream out(&userFile);
+			out << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+			out << "<Project ToolsVersion=\"Current\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">\n";
+			out << "  <PropertyGroup>\n";
+			out << "    <LocalDebuggerWorkingDirectory>$(ProjectDir)</LocalDebuggerWorkingDirectory>\n";
+			out << "    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>\n";
+			out << "  </PropertyGroup>\n";
+			out << "</Project>\n";
+			userFile.close();
+		}
+	}
 }

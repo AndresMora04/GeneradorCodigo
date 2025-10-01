@@ -25,6 +25,7 @@ private slots:
     void onLoadFile();
     void onConvert();
     void onSaveFile();
+	void ensureProjectStructure(const QString& folderPath);
 
 private:
     Ui::MainViewClass ui;

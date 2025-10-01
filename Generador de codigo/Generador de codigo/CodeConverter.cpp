@@ -42,6 +42,7 @@ bool CodeConverter::process() {
 		switch (intention) {
 		case Intention::startProgram: code = emitStart(originalLine); break;
 		case Intention::endProgram: code = emitEnd(originalLine); break;
+		case Intention::assignValue: code = emitAssign(originalLine); break;
 		case Intention::sum: code = emitSum(originalLine); break;
 		case Intention::subtract: code = emitSubtract(originalLine); break;
 		case Intention::multiply: code = emitMultiply(originalLine); break;
@@ -57,9 +58,11 @@ bool CodeConverter::process() {
 		case Intention::inputValue: code = emitInputValue(originalLine); break;
 		case Intention::inputList: code = emitInputList(originalLine); break;
 		case Intention::iterateList: code = emitIterateList(originalLine); break;
+		case Intention::forEachLoop: code = emitForEach(originalLine); break;
 		case Intention::defineFunction: code = emitDefineFunction(originalLine); break;
 		case Intention::returnStatement: code = emitReturn(originalLine); break;
 		case Intention::callFunction: code = emitCallFunction(originalLine); break;
+		case Intention::calculate: code = emitCalculate(originalLine); break;
 
 		default:
 			messages.push_back(Message(MessageType::Warning,
@@ -88,8 +91,14 @@ bool CodeConverter::process() {
 		}
 	}
 
+	if (insideBlock) {
+		generatedCode += "}\n";
+		insideBlock = false;
+	}
+
 	return !generatedCode.empty();
 }
+
 
 string CodeConverter::buildProgram() {
 	return generatedCode;
@@ -99,17 +108,24 @@ Intention CodeConverter::detectIntention(string normalizedLine) {
 	if (normalizedLine.find("comenzar programa") != string::npos) return Intention::startProgram;
 	if (normalizedLine.find("terminar programa") != string::npos) return Intention::endProgram;
 
-	if (normalizedLine.find("ingresar valor de cada") != string::npos &&
-		normalizedLine.find("lista") != string::npos) {
+	if (normalizedLine.find("asignar") != string::npos) return Intention::assignValue;
+
+	if (normalizedLine.find("calcular") != string::npos) return Intention::calculate;
+	if ((normalizedLine.find("ingresar valor de cada") != string::npos &&
+		normalizedLine.find("lista") != string::npos) ||
+		normalizedLine.find("ingresar los valores de la lista") != string::npos) {
 		return Intention::inputList;
 	}
 	if (normalizedLine.find("asignar valor") != string::npos &&
 		normalizedLine.find("lista") != string::npos) {
 		return Intention::assignListElement;
 	}
-	if (normalizedLine.find("recorrer la lista") != string::npos)
-		return Intention::iterateList;
-
+	if (normalizedLine.find("recorrer la lista") != string::npos) {
+		if (normalizedLine.find("sumar") != string::npos || normalizedLine.find("total") != string::npos) {
+			return Intention::iterateList;
+		}
+		return Intention::forEachLoop;
+	}
 	if (normalizedLine.find("definir funcion") != string::npos) return Intention::defineFunction;
 	if (normalizedLine.find("retornar") != string::npos) return Intention::returnStatement;
 	if (normalizedLine.find("llamar funcion") != string::npos) return Intention::callFunction;
@@ -134,7 +150,6 @@ Intention CodeConverter::detectIntention(string normalizedLine) {
 
 	if (normalizedLine.find("imprimir") != string::npos ||
 		normalizedLine.find("mostrar") != string::npos) return Intention::print;
-
 	return Intention::unknown;
 }
 
@@ -143,7 +158,15 @@ string CodeConverter::emitStart(string originalLine) {
 }
 
 string CodeConverter::emitEnd(string originalLine) {
-	return "return 0;\n}";
+	string code;
+
+	if (insideBlock) {
+		code += "}\n";
+		insideBlock = false;
+	}
+
+	code += "system(\"pause\");\nreturn 0;\n}";
+	return code;
 }
 
 string CodeConverter::emitSum(string originalLine) {
@@ -219,14 +242,11 @@ string CodeConverter::emitSubtract(string originalLine) {
 	string target = "";
 	string operation = "";
 	bool foundSomething = false;
+	bool hasError = false;
 
 	for (size_t i = 0; i < words.size(); i++) {
 		if (words[i] == "asignar" && i + 2 < words.size() && words[i + 1] == "a") {
 			target = words[i + 2];
-			break;
-		}
-		if (words[i] == "a" && i + 1 < words.size()) {
-			target = words[i + 1];
 			break;
 		}
 	}
@@ -234,7 +254,7 @@ string CodeConverter::emitSubtract(string originalLine) {
 	if (target.empty()) {
 		messages.push_back(Message(MessageType::Error,
 			"No se indicó la variable destino en -> " + originalLine));
-		return "";
+		hasError = true;
 	}
 
 	for (string& word : words) {
@@ -247,10 +267,10 @@ string CodeConverter::emitSubtract(string originalLine) {
 			operation += var->getName();
 			foundSomething = true;
 		}
-		else if (isalpha(word[0])) {
+		else if (isalpha(word[0]) && word != "asignar" && word != "a" && word != "y") {
 			messages.push_back(Message(MessageType::Error,
 				"La variable '" + word + "' no fue declarada antes."));
-			return "";
+			hasError = true;
 		}
 	}
 
@@ -264,15 +284,19 @@ string CodeConverter::emitSubtract(string originalLine) {
 	if (!foundSomething) {
 		messages.push_back(Message(MessageType::Error,
 			"No se encontraron números o variables para restar en -> " + originalLine));
-		return "";
+		hasError = true;
 	}
 
-	Variable* var = findVariable(target);
-	if (!var) {
-		messages.push_back(Message(MessageType::Error,
-			"La variable destino '" + target + "' no fue declarada antes."));
-		return "";
+	if (!target.empty()) {
+		Variable* var = findVariable(target);
+		if (!var) {
+			messages.push_back(Message(MessageType::Error,
+				"La variable destino '" + target + "' no fue declarada antes."));
+			hasError = true;
+		}
 	}
+
+	if (hasError) return "";
 
 	return target + " = " + operation + ";";
 }
@@ -284,23 +308,35 @@ string CodeConverter::emitMultiply(string originalLine) {
 	string target = "";
 	string operation = "";
 	bool foundSomething = false;
+	bool hasError = false;
 
 	for (size_t i = 0; i < words.size(); i++) {
-		if (words[i] == "a" && i + 1 < words.size()) {
-			target = words[i + 1];
-		}
 		if (words[i] == "asignar" && i + 2 < words.size() && words[i + 1] == "a") {
 			target = words[i + 2];
+			break;
 		}
 	}
 
-	for (const string& word : words) {
+	if (target.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se indicó la variable destino en -> " + originalLine));
+		hasError = true;
+	}
+
+	for (string& word : words) {
+		if (isReservedWord(word)) continue;
+
 		Variable* var = findVariable(word);
 		if (var != nullptr) {
 			if (word == target) continue;
 			if (!operation.empty()) operation += " * ";
 			operation += var->getName();
 			foundSomething = true;
+		}
+		else if (isalpha(word[0]) && word != "asignar" && word != "a" && word != "y") {
+			messages.push_back(Message(MessageType::Error,
+				"La variable '" + word + "' no fue declarada antes."));
+			hasError = true;
 		}
 	}
 
@@ -314,21 +350,21 @@ string CodeConverter::emitMultiply(string originalLine) {
 	if (!foundSomething) {
 		messages.push_back(Message(MessageType::Error,
 			"No se encontraron números o variables para multiplicar en -> " + originalLine));
-		return "";
+		hasError = true;
 	}
 
 	if (!target.empty()) {
 		Variable* var = findVariable(target);
 		if (!var) {
 			messages.push_back(Message(MessageType::Error,
-				"La variable '" + target + "' no fue declarada antes."));
-			return "";
+				"La variable destino '" + target + "' no fue declarada antes."));
+			hasError = true;
 		}
-		return target + " = " + operation + ";";
 	}
 
-	string tempName = "resultMultiply" + to_string(multiplyCounter++);
-	return "int " + tempName + " = " + operation + ";";
+	if (hasError) return "";
+
+	return target + " = " + operation + ";";
 }
 
 string CodeConverter::emitDivide(string originalLine) {
@@ -338,25 +374,35 @@ string CodeConverter::emitDivide(string originalLine) {
 	string target = "";
 	string operation = "";
 	bool foundSomething = false;
+	bool hasError = false;
 
 	for (size_t i = 0; i < words.size(); i++) {
-		if (words[i] == "a" && i + 1 < words.size()) {
-			target = words[i + 1];
-			continue;
-		}
 		if (words[i] == "asignar" && i + 2 < words.size() && words[i + 1] == "a") {
 			target = words[i + 2];
-			continue;
+			break;
 		}
 	}
 
-	for (const string& word : words) {
+	if (target.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se indicó la variable destino en -> " + originalLine));
+		hasError = true;
+	}
+
+	for (string& word : words) {
+		if (isReservedWord(word)) continue;
+
 		Variable* var = findVariable(word);
 		if (var != nullptr) {
-			if (var->getName() == target) continue;
+			if (word == target) continue;
 			if (!operation.empty()) operation += " / ";
 			operation += var->getName();
 			foundSomething = true;
+		}
+		else if (isalpha(word[0]) && word != "asignar" && word != "a" && word != "y") {
+			messages.push_back(Message(MessageType::Error,
+				"La variable '" + word + "' no fue declarada antes."));
+			hasError = true;
 		}
 	}
 
@@ -370,21 +416,21 @@ string CodeConverter::emitDivide(string originalLine) {
 	if (!foundSomething) {
 		messages.push_back(Message(MessageType::Error,
 			"No se encontraron números o variables para dividir en -> " + originalLine));
-		return "";
+		hasError = true;
 	}
 
 	if (!target.empty()) {
 		Variable* var = findVariable(target);
 		if (!var) {
 			messages.push_back(Message(MessageType::Error,
-				"La variable '" + target + "' no fue declarada antes."));
-			return "";
+				"La variable destino '" + target + "' no fue declarada antes."));
+			hasError = true;
 		}
-		return target + " = " + operation + ";";
 	}
 
-	string tempName = "resultDivide" + to_string(divideCounter++);
-	return "int " + tempName + " = " + operation + ";";
+	if (hasError) return "";
+
+	return target + " = " + operation + ";";
 }
 
 string CodeConverter::emitPrint(string originalLine) {
@@ -392,16 +438,25 @@ string CodeConverter::emitPrint(string originalLine) {
 	vector<string> parts;
 
 	size_t pos = 0;
+	vector<pair<int, int>> quoteRanges;
 	while ((pos = originalLine.find("\"", pos)) != string::npos) {
 		size_t end = originalLine.find("\"", pos + 1);
 		if (end == string::npos) break;
 		string text = originalLine.substr(pos, end - pos + 1);
 		parts.push_back(text);
+		quoteRanges.push_back({ (int)pos, (int)end });
 		pos = end + 1;
 	}
 
 	vector<string> words = util.splitWords(originalLine);
-	for (const string& word : words) {
+	for (string& word : words) {
+		if (isReservedWord(word)) continue;
+
+		if (word == "i") {
+			parts.push_back("i");
+			continue;
+		}
+
 		Variable* var = findVariable(word);
 		if (var != nullptr) {
 			parts.push_back(var->getName());
@@ -421,6 +476,69 @@ string CodeConverter::emitPrint(string originalLine) {
 	code += " << endl;";
 
 	return code;
+}
+
+string CodeConverter::emitAssign(string originalLine) {
+	Utility util;
+	vector<string> words = util.splitWords(originalLine);
+
+	string value = "";
+	string target = "";
+	bool hasError = false;
+
+	for (size_t i = 0; i < words.size(); i++) {
+		string lw = util.toLowerCase(words[i]);
+		if (lw == "asignar") {
+			if (i + 1 < words.size()) {
+				value = words[i + 1];
+			}
+			for (size_t j = i + 1; j < words.size(); j++) {
+				string lw2 = util.toLowerCase(words[j]);
+				if (lw2 == "a" && j + 1 < words.size()) {
+					target = words[j + 1];
+					break;
+				}
+			}
+			break;
+		}
+	}
+
+	if (target.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se indicó variable destino en -> " + originalLine));
+		return "";
+	}
+
+	string lowerValue = util.toLowerCase(value);
+	if (lowerValue == "verdadero" || lowerValue == "true")
+		value = "true";
+	else if (lowerValue == "falso" || lowerValue == "false")
+		value = "false";
+
+	vector<int> nums = util.extractIntegers(value);
+	if (!nums.empty()) {
+		value = to_string(nums[0]);
+	}
+
+	if (nums.empty() && value != "true" && value != "false" && value.find("\"") == string::npos) {
+		Variable* varValue = findVariable(value);
+		if (!varValue) {
+			messages.push_back(Message(MessageType::Error,
+				"La variable origen '" + value + "' no fue declarada antes."));
+			hasError = true;
+		}
+	}
+
+	Variable* varTarget = findVariable(target);
+	if (!varTarget) {
+		messages.push_back(Message(MessageType::Error,
+			"La variable destino '" + target + "' no fue declarada antes."));
+		hasError = true;
+	}
+
+	if (hasError) return "";
+
+	return target + " = " + value + ";";
 }
 
 string CodeConverter::emitCreateList(string originalLine) {
@@ -620,31 +738,57 @@ string CodeConverter::emitIf(string originalLine) {
 	vector<string> words = util.splitWords(originalLine);
 	vector<int> numbers = util.extractIntegers(originalLine);
 
-	if (numbers.empty()) {
-		messages.push_back(Message(MessageType::Error,
-			"No se encontró número de comparación en -> " + originalLine));
-		return "";
-	}
-
-	string variableName = "number";
-	string op = ">";
-
-	for (const string& w : words) {
-		Variable* var = findVariable(w);
-		if (var != nullptr && !var->getIsList()) {
-			variableName = var->getName();
-			break;
-		}
-	}
+	string leftOperand = "";
+	string rightOperand = "";
+	string op = "==";
 
 	if (originalLine.find("mayor que") != string::npos) op = ">";
 	else if (originalLine.find("menor que") != string::npos) op = "<";
 	else if (originalLine.find("igual a") != string::npos) op = "==";
 
-	int value = numbers[0];
+	for (string& w : words) {
+		if (isReservedWord(w)) continue;
 
-	string code;
-	code += "if (" + variableName + " " + op + " " + to_string(value) + ") {";
+		if (w.find("[") != string::npos && w.find("]") != string::npos) {
+			if (leftOperand.empty()) leftOperand = w;
+			else rightOperand = w;
+			continue;
+		}
+
+		if (w == "i") {
+			if (leftOperand.empty()) leftOperand = "i";
+			else rightOperand = "i";
+			continue;
+		}
+
+		Variable* var = findVariable(w);
+		if (var != nullptr) {
+			if (leftOperand.empty()) leftOperand = var->getName();
+			else rightOperand = var->getName();
+			continue;
+		}
+	}
+
+	if (!numbers.empty()) {
+		if (leftOperand.empty()) leftOperand = to_string(numbers[0]);
+		else if (rightOperand.empty()) rightOperand = to_string(numbers[0]);
+	}
+
+	string lowerLine = util.toLowerCase(originalLine);
+	if (lowerLine.find("verdadero") != string::npos || lowerLine.find("true") != string::npos) {
+		if (rightOperand.empty()) rightOperand = "true";
+	}
+	else if (lowerLine.find("falso") != string::npos || lowerLine.find("false") != string::npos) {
+		if (rightOperand.empty()) rightOperand = "false";
+	}
+
+	if (leftOperand.empty() || rightOperand.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se encontró valor o variable de comparación en -> " + originalLine));
+		return "";
+	}
+
+	string code = "if (" + leftOperand + " " + op + " " + rightOperand + ") {";
 	insideBlock = true;
 	return code;
 }
@@ -718,6 +862,73 @@ string CodeConverter::emitCreateVariable(string originalLine) {
 	declaredVariables.push_back(newVar);
 
 	return type + " " + name + " = " + value + ";";
+}
+
+string CodeConverter::emitCalculate(string originalLine) {
+	Utility util;
+	vector<string> words = util.splitWords(originalLine);
+
+	string target = "";
+	string operation = "";
+	bool foundSomething = false;
+	bool hasError = false;
+
+	for (size_t i = 0; i < words.size(); i++) {
+		if (words[i] == "asignar" && i + 2 < words.size() && words[i + 1] == "a") {
+			target = words[i + 2];
+			break;
+		}
+		if (words[i] == "a" && i + 1 < words.size()) {
+			target = words[i + 1];
+			break;
+		}
+	}
+
+	if (target.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se indicó la variable destino en -> " + originalLine));
+		return "";
+	}
+
+	string op = "";
+	if (originalLine.find("sumar") != string::npos) op = "+";
+	else if (originalLine.find("restar") != string::npos) op = "-";
+	else if (originalLine.find("multiplicar") != string::npos) op = "*";
+	else if (originalLine.find("dividir") != string::npos) op = "/";
+
+	for (string& word : words) {
+		if (isReservedWord(word)) continue;
+
+		Variable* var = findVariable(word);
+		if (var != nullptr) {
+			if (word == target) continue;
+			if (!operation.empty() && !op.empty()) operation += " " + op + " ";
+			operation += var->getName();
+			foundSomething = true;
+		}
+	}
+
+	vector<int> numbers = util.extractIntegers(originalLine);
+	for (int n : numbers) {
+		if (!operation.empty() && !op.empty()) operation += " " + op + " ";
+		operation += to_string(n);
+		foundSomething = true;
+	}
+
+	if (!foundSomething) {
+		messages.push_back(Message(MessageType::Error,
+			"No se encontraron números o variables para calcular en -> " + originalLine));
+		return "";
+	}
+
+	Variable* var = findVariable(target);
+	if (!var) {
+		messages.push_back(Message(MessageType::Error,
+			"La variable destino '" + target + "' no fue declarada antes."));
+		return "";
+	}
+
+	return target + " = " + operation + ";";
 }
 
 string CodeConverter::emitInputList(string originalLine) {
@@ -796,6 +1007,34 @@ string CodeConverter::emitIterateList(string originalLine) {
 		"}";
 }
 
+string CodeConverter::emitForEach(string originalLine) {
+	Utility util;
+	vector<string> words = util.splitWords(originalLine);
+
+	string listName = "";
+	for (size_t i = 0; i < words.size(); i++) {
+		if (words[i] == "lista" && i + 1 < words.size()) {
+			listName = words[i + 1];
+			break;
+		}
+	}
+
+	if (listName.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se especificó la lista en -> " + originalLine));
+		return "";
+	}
+
+	Variable* listVar = findVariable(listName);
+	if (!listVar || !listVar->getIsList()) {
+		messages.push_back(Message(MessageType::Error,
+			"La lista '" + listName + "' no fue declarada antes."));
+		return "";
+	}
+
+	return "for (int i = 0; i < " + listName + ".size(); i++) {";
+}
+
 string CodeConverter::emitInputValue(string originalLine) {
 	Utility util;
 	vector<string> words = util.splitWords(originalLine);
@@ -825,7 +1064,10 @@ string CodeConverter::emitInputValue(string originalLine) {
 }
 
 string CodeConverter::emitElse(string originalLine) {
-	insideBlock = true;
+	if (insideBlock) {
+		insideBlock = true;
+		return "} else {";
+	}
 	return "else {";
 }
 
@@ -966,9 +1208,16 @@ bool CodeConverter::isReservedWord(string& word) {
 	return false;
 }
 
-
-
-
+string CodeConverter::closeBlockIfNeeded(string nextLine) {
+	if (insideBlock) {
+		if (nextLine.find("sino") == string::npos &&
+			nextLine.find("else") == string::npos) {
+			insideBlock = false;
+			return "}";
+		}
+	}
+	return "";
+}
 
 
 

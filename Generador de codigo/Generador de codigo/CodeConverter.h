@@ -29,6 +29,7 @@ private:
     Variable* findVariable(string name);
     int getIndexFromWordOrNumber(string originalLine, vector<string> words);
     bool isReservedWord(string& word);
+	string closeBlockIfNeeded(string originalLine);
 
 	string emitDefineFunction(string originalLine);
 	string emitReturn(string originalLine);
@@ -46,17 +47,21 @@ private:
 
     string emitCreateVariable(string originalLine);
     string emitInputValue(string originalLine);
+	string emitAssign(string originalLine);
 
     string emitCreateList(string originalLine);
     string emitInputList(string originalLine);
     string emitAssignListElement(string originalLine);
     string emitIterateList(string originalLine);
+	string emitForEach(string originalLine);
 
     string emitIf(string originalLine);
     string emitElse(string originalLine);
 
     string emitRepeat(string originalLine);
     string emitWhile(string originalLine);
+
+	string emitCalculate(string originalLine);
 
 public:
     CodeConverter();
