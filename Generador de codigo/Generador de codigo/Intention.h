@@ -23,5 +23,8 @@ enum class Intention {
     inputValue,
     startProgram,
     endProgram,
-    unknown
+    unknown,
+    defineFunction,
+    returnStatement, 
+    callFunction
 };

@@ -28,6 +28,11 @@ private:
     string normalizeWord(const string& word);
     Variable* findVariable(string name);
     int getIndexFromWordOrNumber(string originalLine, vector<string> words);
+    bool isReservedWord(string& word);
+
+	string emitDefineFunction(string originalLine);
+	string emitReturn(string originalLine);
+	string emitCallFunction(string originalLine);
 
     string emitStart(string originalLine);
     string emitEnd(string originalLine);

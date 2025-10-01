@@ -57,6 +57,10 @@ bool CodeConverter::process() {
 		case Intention::inputValue: code = emitInputValue(originalLine); break;
 		case Intention::inputList: code = emitInputList(originalLine); break;
 		case Intention::iterateList: code = emitIterateList(originalLine); break;
+		case Intention::defineFunction: code = emitDefineFunction(originalLine); break;
+		case Intention::returnStatement: code = emitReturn(originalLine); break;
+		case Intention::callFunction: code = emitCallFunction(originalLine); break;
+
 		default:
 			messages.push_back(Message(MessageType::Warning,
 				"Unrecognized instruction in line: " + originalLine));
@@ -67,6 +71,20 @@ bool CodeConverter::process() {
 			generatedCode += code + "\n";
 			messages.push_back(Message(MessageType::Information,
 				"Processed line: " + originalLine));
+		}
+		else {
+			bool hasError = false;
+			for (auto& msg : messages) {
+				if (msg.getType() == MessageType::Error &&
+					msg.getText().find(originalLine) != string::npos) {
+					hasError = true;
+					break;
+				}
+			}
+			if (!hasError) {
+				messages.push_back(Message(MessageType::Warning,
+					"No code generated for line: " + originalLine));
+			}
 		}
 	}
 
@@ -91,6 +109,10 @@ Intention CodeConverter::detectIntention(string normalizedLine) {
 	}
 	if (normalizedLine.find("recorrer la lista") != string::npos)
 		return Intention::iterateList;
+
+	if (normalizedLine.find("definir funcion") != string::npos) return Intention::defineFunction;
+	if (normalizedLine.find("retornar") != string::npos) return Intention::returnStatement;
+	if (normalizedLine.find("llamar funcion") != string::npos) return Intention::callFunction;
 
 	if (normalizedLine.rfind("si ", 0) == 0) return Intention::ifBlock;
 	if (normalizedLine == "sino" || normalizedLine.find("sino") != string::npos) return Intention::elseBlock;
@@ -131,23 +153,35 @@ string CodeConverter::emitSum(string originalLine) {
 	string target = "";
 	string operation = "";
 	bool foundSomething = false;
+	bool hasError = false;
 
 	for (size_t i = 0; i < words.size(); i++) {
-		if (words[i] == "a" && i + 1 < words.size()) {
-			target = words[i + 1];
-		}
 		if (words[i] == "asignar" && i + 2 < words.size() && words[i + 1] == "a") {
 			target = words[i + 2];
+			break;
 		}
 	}
 
-	for (const string& word : words) {
+	if (target.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se indicó la variable destino en -> " + originalLine));
+		hasError = true;
+	}
+
+	for (string& word : words) {
+		if (isReservedWord(word)) continue;
+
 		Variable* var = findVariable(word);
 		if (var != nullptr) {
 			if (word == target) continue;
 			if (!operation.empty()) operation += " + ";
 			operation += var->getName();
 			foundSomething = true;
+		}
+		else if (isalpha(word[0]) && word != "asignar" && word != "a" && word != "y") {
+			messages.push_back(Message(MessageType::Error,
+				"La variable '" + word + "' no fue declarada antes."));
+			hasError = true;
 		}
 	}
 
@@ -161,21 +195,21 @@ string CodeConverter::emitSum(string originalLine) {
 	if (!foundSomething) {
 		messages.push_back(Message(MessageType::Error,
 			"No se encontraron números o variables para sumar en -> " + originalLine));
-		return "";
+		hasError = true;
 	}
 
 	if (!target.empty()) {
 		Variable* var = findVariable(target);
 		if (!var) {
 			messages.push_back(Message(MessageType::Error,
-				"La variable '" + target + "' no fue declarada antes."));
-			return "";
+				"La variable destino '" + target + "' no fue declarada antes."));
+			hasError = true;
 		}
-		return target + " = " + operation + ";";
 	}
 
-	string tempName = "resultSum" + to_string(sumCounter++);
-	return "int " + tempName + " = " + operation + ";";
+	if (hasError) return "";
+
+	return target + " = " + operation + ";";
 }
 
 string CodeConverter::emitSubtract(string originalLine) {
@@ -187,21 +221,36 @@ string CodeConverter::emitSubtract(string originalLine) {
 	bool foundSomething = false;
 
 	for (size_t i = 0; i < words.size(); i++) {
-		if (words[i] == "a" && i + 1 < words.size()) {
-			target = words[i + 1];
-		}
 		if (words[i] == "asignar" && i + 2 < words.size() && words[i + 1] == "a") {
 			target = words[i + 2];
+			break;
+		}
+		if (words[i] == "a" && i + 1 < words.size()) {
+			target = words[i + 1];
+			break;
 		}
 	}
 
-	for (const string& word : words) {
+	if (target.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se indicó la variable destino en -> " + originalLine));
+		return "";
+	}
+
+	for (string& word : words) {
+		if (isReservedWord(word)) continue;
+
 		Variable* var = findVariable(word);
 		if (var != nullptr) {
 			if (word == target) continue;
 			if (!operation.empty()) operation += " - ";
 			operation += var->getName();
 			foundSomething = true;
+		}
+		else if (isalpha(word[0])) {
+			messages.push_back(Message(MessageType::Error,
+				"La variable '" + word + "' no fue declarada antes."));
+			return "";
 		}
 	}
 
@@ -218,18 +267,14 @@ string CodeConverter::emitSubtract(string originalLine) {
 		return "";
 	}
 
-	if (!target.empty()) {
-		Variable* var = findVariable(target);
-		if (!var) {
-			messages.push_back(Message(MessageType::Error,
-				"La variable '" + target + "' no fue declarada antes."));
-			return "";
-		}
-		return target + " = " + operation + ";";
+	Variable* var = findVariable(target);
+	if (!var) {
+		messages.push_back(Message(MessageType::Error,
+			"La variable destino '" + target + "' no fue declarada antes."));
+		return "";
 	}
 
-	string tempName = "resultSubtract" + to_string(subtractCounter++);
-	return "int " + tempName + " = " + operation + ";";
+	return target + " = " + operation + ";";
 }
 
 string CodeConverter::emitMultiply(string originalLine) {
@@ -784,6 +829,78 @@ string CodeConverter::emitElse(string originalLine) {
 	return "else {";
 }
 
+string CodeConverter::emitDefineFunction(string originalLine) {
+	Utility util;
+	vector<string> words = util.splitWords(originalLine);
+
+	string returnType = "int";
+	string functionName = "func";
+	string paramType = "int";
+	string paramName = "x";
+
+	for (size_t i = 0; i < words.size(); i++) {
+		if (words[i] == "entero" || words[i] == "int") returnType = "int";
+		else if (words[i] == "decimal" || words[i] == "float") returnType = "float";
+		else if (words[i] == "texto" || words[i] == "string") returnType = "string";
+
+		if (words[i] == "funcion" && i + 1 < words.size()) {
+			functionName = words[i + 1];
+		}
+
+		if (words[i] == "parametro" && i + 2 < words.size()) {
+			if (words[i + 1] == "entero" || words[i + 1] == "int") paramType = "int";
+			else if (words[i + 1] == "decimal" || words[i + 1] == "float") paramType = "float";
+			else if (words[i + 1] == "texto" || words[i + 1] == "string") paramType = "string";
+			paramName = words[i + 2];
+		}
+	}
+
+	return returnType + " " + functionName + "(" + paramType + " " + paramName + ") {";
+}
+
+string CodeConverter::emitReturn(string originalLine) {
+	Utility util;
+	vector<string> words = util.splitWords(originalLine);
+
+	if (words.size() < 2) {
+		messages.push_back(Message(MessageType::Error,
+			"No se indicó valor a retornar en -> " + originalLine));
+		return "";
+	}
+
+	string value = words.back();
+	return "return " + value + ";";
+}
+
+string CodeConverter::emitCallFunction(string originalLine) {
+	Utility util;
+	vector<string> words = util.splitWords(originalLine);
+
+	string functionName = "";
+	string arg = "";
+	string target = "";
+
+	for (size_t i = 0; i < words.size(); i++) {
+		if (words[i] == "funcion" && i + 1 < words.size()) {
+			functionName = words[i + 1];
+		}
+		if (words[i] == "asignar" && i + 2 < words.size()) {
+			target = words[i + 2];
+		}
+		if (words[i] == "con" && i + 1 < words.size()) {
+			arg = words[i + 1];
+		}
+	}
+
+	if (functionName.empty() || target.empty() || arg.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se pudo interpretar la llamada a función en -> " + originalLine));
+		return "";
+	}
+
+	return target + " = " + functionName + "(" + arg + ");";
+}
+
 int CodeConverter::getIndexFromWordOrNumber(string originalLine, vector<string> words) {
 	for (size_t i = 0; i < words.size(); i++) {
 		string w = words[i];
@@ -836,6 +953,18 @@ Variable* CodeConverter::findVariable(string name) {
 	return nullptr;
 }
 
+bool CodeConverter::isReservedWord(string& word) {
+	static vector<string> reserved = {
+		"sumar", "restar", "multiplicar", "dividir",
+		"asignar", "a", "y", "si", "sino",
+		"mientras", "repetir", "crear", "variable",
+		"lista", "funcion", "retornar", "imprimir", "mostrar"
+	};
+	for (const string& r : reserved) {
+		if (word == r) return true;
+	}
+	return false;
+}
 
 
 
