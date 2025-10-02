@@ -23,13 +23,21 @@ private:
 	int multiplyCounter = 0;
 	int divideCounter = 0;
 	int listCounter = 0;
-	std::string headersCode;
-	std::string functionsCode;
-	std::string mainCode;
+	string headersCode;
+	string functionsCode;
+	string mainCode;
 	bool inFunction = false;
 	bool sawMainStart = false;
 
-	bool insideBlock = false;
+	bool inLoopCtx = false;
+	string loopListName;
+
+	bool inWhileCtx = false;
+	string whileVarNameFlat;
+
+	bool inIf = false;
+
+	int blockDepth = 0;
 
 	unordered_map<string, vector<pair<string, string>>> structFields;
 

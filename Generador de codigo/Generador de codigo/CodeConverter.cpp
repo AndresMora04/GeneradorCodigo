@@ -23,7 +23,7 @@ vector<Message> CodeConverter::getMessages() {
 }
 
 bool CodeConverter::process() {
-	insideBlock = false;
+	blockDepth = 0;
 	generatedCode.clear();
 	messages.clear();
 	declaredVariables.clear();
@@ -44,6 +44,12 @@ bool CodeConverter::process() {
 
 		Intention intention = detectIntention(normalizedLine);
 		string code = "";
+
+		string maybeClose = closeBlockIfNeeded(normalizedLine);
+		if (!maybeClose.empty()) {
+			std::string* out = inFunction ? &functionsCode : &mainCode;
+			*out += maybeClose + "\n";
+		}
 
 		switch (intention) {
 		case Intention::startProgram: code = emitStart(originalLine); break;
@@ -112,10 +118,10 @@ bool CodeConverter::process() {
 
 	}
 
-	if (insideBlock) {
-		std::string* out = inFunction ? &functionsCode : &mainCode;
+	while (blockDepth > 0) {
+		string* out = inFunction ? &functionsCode : &mainCode;
 		*out += "}\n";
-		insideBlock = false;
+		blockDepth--;
 	}
 
 	if (sawMainStart) {
@@ -147,59 +153,57 @@ string CodeConverter::buildProgram() {
 
 Intention CodeConverter::detectIntention(string normalizedLine) {
 	if (normalizedLine.find("comenzar programa") != string::npos) return Intention::startProgram;
-	if (normalizedLine.find("terminar programa") != string::npos) return Intention::endProgram;
-	if (normalizedLine.find("llamar funcion") != string::npos) return Intention::callFunction;
-	if (normalizedLine.find("asignar") != string::npos) return Intention::assignValue;
+	if (normalizedLine.find("terminar programa") != string::npos)  return Intention::endProgram;
 
-	if (normalizedLine.find("crear estructura") != string::npos) return Intention::createStruct;
+	if (normalizedLine.find("definir funcion") != string::npos)    return Intention::defineFunction;
+	if (normalizedLine.find("retornar") != string::npos)            return Intention::returnStatement;
 
-	if (normalizedLine.find("crear lista de") != string::npos) return Intention::createCustomList;
+	if (normalizedLine.find("crear estructura") != string::npos)    return Intention::createStruct;
+	if (normalizedLine.find("crear lista de") != string::npos)      return Intention::createCustomList;
+	if (normalizedLine.find("crear lista") != string::npos ||
+		normalizedLine.find("crear una lista") != string::npos)     return Intention::createList;
 
-	if (normalizedLine.find("ingresar los datos de cada") != string::npos ||
-		normalizedLine.find("ingresar los datos de cada ") != string::npos) return Intention::inputStructItems;
+	if (normalizedLine.find("ingresar los datos de cada") != string::npos) return Intention::inputStructItems;
+	if ((normalizedLine.find("ingresar valor de cada") != string::npos && normalizedLine.find("lista") != string::npos) ||
+		normalizedLine.find("ingresar los valores de la lista") != string::npos)
+		return Intention::inputList;
 
 	if (normalizedLine.find("recorrer la lista") != string::npos &&
-		(normalizedLine.find("mostrar") != string::npos)) return Intention::traverseStructListPrint;
+		normalizedLine.find("mostrar") != string::npos)
+		return Intention::traverseStructListPrint;
 
-	if (normalizedLine.find("calcular") != string::npos) return Intention::calculate;
-	if ((normalizedLine.find("ingresar valor de cada") != string::npos &&
-		normalizedLine.find("lista") != string::npos) ||
-		normalizedLine.find("ingresar los valores de la lista") != string::npos) {
-		return Intention::inputList;
-	}
-	if (normalizedLine.find("asignar valor") != string::npos &&
-		normalizedLine.find("lista") != string::npos) {
-		return Intention::assignListElement;
-	}
 	if (normalizedLine.find("recorrer la lista") != string::npos) {
-		if (normalizedLine.find("sumar") != string::npos || normalizedLine.find("total") != string::npos) {
+		if (normalizedLine.find("sumar") != string::npos || normalizedLine.find("total") != string::npos)
 			return Intention::iterateList;
-		}
 		return Intention::forEachLoop;
 	}
-	if (normalizedLine.find("definir funcion") != string::npos) return Intention::defineFunction;
-	if (normalizedLine.find("retornar") != string::npos) return Intention::returnStatement;
 
-	if (normalizedLine.rfind("si ", 0) == 0) return Intention::ifBlock;
+	if (normalizedLine.find("crear variable") != string::npos)      return Intention::createVariable;
+	if (normalizedLine.find("ingresar valor") != string::npos)      return Intention::inputValue;
+
+	if (normalizedLine.find("calcular") != string::npos)            return Intention::calculate;
+
+	if (normalizedLine.find("asignar valor") != string::npos &&
+		normalizedLine.find("lista") != string::npos)
+		return Intention::assignListElement;
+
+	if (normalizedLine.find("llamar funcion") != string::npos)      return Intention::callFunction;
+
+	if (normalizedLine.rfind("si ", 0) == 0)                        return Intention::ifBlock;
 	if (normalizedLine == "sino" || normalizedLine.find("sino") != string::npos) return Intention::elseBlock;
-	if (normalizedLine.find("repetir") != string::npos) return Intention::repeatLoop;
-	if (normalizedLine.find("mientras") != string::npos) return Intention::whileLoop;
+	if (normalizedLine.find("mientras") != string::npos)            return Intention::whileLoop;
+	if (normalizedLine.find("repetir") != string::npos)             return Intention::repeatLoop;
 
-	if (normalizedLine.find("crear variable") != string::npos) return Intention::createVariable;
-	if (normalizedLine.find("ingresar valor") != string::npos) return Intention::inputValue;
+	if (normalizedLine.find("sumar") != string::npos)               return Intention::sum;
+	if (normalizedLine.find("restar") != string::npos)              return Intention::subtract;
+	if (normalizedLine.find("multiplicar") != string::npos)         return Intention::multiply;
+	if (normalizedLine.find("dividir") != string::npos)             return Intention::divide;
 
-	if (normalizedLine.find("sumar") != string::npos) return Intention::sum;
-	if (normalizedLine.find("restar") != string::npos) return Intention::subtract;
-	if (normalizedLine.find("multiplicar") != string::npos) return Intention::multiply;
-	if (normalizedLine.find("dividir") != string::npos) return Intention::divide;
-
-	if (normalizedLine.find("crear lista") != string::npos ||
-		normalizedLine.find("crear una lista") != string::npos) {
-		return Intention::createList;
-	}
+	if (normalizedLine.find("asignar") != string::npos)             return Intention::assignValue;
 
 	if (normalizedLine.find("imprimir") != string::npos ||
-		normalizedLine.find("mostrar") != string::npos) return Intention::print;
+		normalizedLine.find("mostrar") != string::npos)             return Intention::print;
+
 	return Intention::unknown;
 }
 
@@ -208,14 +212,14 @@ string CodeConverter::emitStart(string /*originalLine*/) {
 	return "";
 }
 
-string CodeConverter::emitEnd(string /*originalLine*/) {
+string CodeConverter::emitEnd(string) {
 	string code;
-
-	if (insideBlock) {
-		code += "}\n";
-		insideBlock = false;
-	}
-
+	while (blockDepth > 0) { code += "}\n"; blockDepth--; }
+#ifdef _WIN32
+	code += "system(\"pause\");\n";
+#else
+	code += "// Presiona Enter para finalizar\ncin.get();\n";
+#endif
 	code += "return 0;\n}";
 	return code;
 }
@@ -641,32 +645,66 @@ string CodeConverter::emitPrint(string originalLine) {
 	vector<string> parts;
 
 	size_t pos = 0;
-	vector<pair<int, int>> quoteRanges;
 	while ((pos = originalLine.find("\"", pos)) != string::npos) {
 		size_t end = originalLine.find("\"", pos + 1);
 		if (end == string::npos) break;
 		string text = originalLine.substr(pos, end - pos + 1);
 		parts.push_back(text);
-		quoteRanges.push_back({ (int)pos, (int)end });
 		pos = end + 1;
 	}
 
 	vector<string> words = util.splitWords(originalLine);
-	for (string& word : words) {
-		if (isReservedWord(word)) continue;
+	for (size_t i = 0; i < words.size(); i++) {
+		string lw = util.toLowerCase(words[i]);
+		if (lw == "y" && i + 1 < words.size()) {
+			string candidate = words[i + 1];
 
-		if (word == "i") {
-			parts.push_back("i");
-			continue;
+			if (candidate == "i") {
+				parts.push_back("i");
+				continue;
+			}
+
+			if (Variable* var = findVariable(candidate)) {
+				parts.push_back(var->getName());
+			}
 		}
+	}
 
-		Variable* var = findVariable(word);
-		if (var != nullptr) {
-			parts.push_back(var->getName());
+	{
+		string lower = util.toLowerCase(originalLine);
+		bool startsWithImprimir = (lower.rfind("imprimir ", 0) == 0);
+		bool startsWithMostrar = (lower.rfind("mostrar ", 0) == 0);
+
+		if (startsWithImprimir || startsWithMostrar) {
+			for (size_t i = 1; i < words.size(); ++i) {
+				string tok = words[i];
+				string ltok = util.toLowerCase(tok);
+				if (ltok == "y") continue;
+
+				if (tok == "i") {
+					parts.push_back("i");
+					continue;
+				}
+				if (Variable* var = findVariable(tok)) {
+					parts.push_back(var->getName());
+				}
+			}
 		}
 	}
 
 	if (parts.empty()) {
+		string lower = util.toLowerCase(originalLine);
+		if (lower.rfind("imprimir ", 0) == 0 || lower.rfind("mostrar ", 0) == 0) {
+			vector<string> w = util.splitWords(originalLine);
+			if (w.size() >= 2) {
+				if (w[1] == "i") {
+					return "cout << i << endl;";
+				}
+				if (Variable* v = findVariable(w[1])) {
+					return "cout << " + v->getName() + " << endl;";
+				}
+			}
+		}
 		messages.push_back(Message(MessageType::Error,
 			"No se pudo determinar qué imprimir en -> " + originalLine));
 		return "";
@@ -969,7 +1007,9 @@ string CodeConverter::emitWhile(string originalLine) {
 	}
 
 	string code = "while (" + lhs + " " + cmp + " " + rhs + ") {";
-	insideBlock = true;
+	blockDepth++;
+	inWhileCtx = true;
+	whileVarNameFlat = util.toLowerCase(lhs);
 	return code;
 }
 
@@ -1005,8 +1045,21 @@ string CodeConverter::emitIf(string originalLine) {
 
 	string leftOperand, rightOperand;
 
+
 	for (string& w : words) {
 		if (isReservedWord(w)) continue;
+
+		string lw = util.toLowerCase(w);
+		if (lw == "verdadero" || lw == "true") {
+			if (leftOperand.empty()) leftOperand = "true";
+			else if (rightOperand.empty()) rightOperand = "true";
+			continue;
+		}
+		if (lw == "falso" || lw == "false") {
+			if (leftOperand.empty()) leftOperand = "false";
+			else if (rightOperand.empty()) rightOperand = "false";
+			continue;
+		}
 
 		if (w == "i") {
 			if (leftOperand.empty()) leftOperand = "i";
@@ -1048,7 +1101,8 @@ string CodeConverter::emitIf(string originalLine) {
 	}
 
 	string code = "if (" + leftOperand + " " + op + " " + rightOperand + ") {";
-	insideBlock = true;
+	blockDepth++;
+	inIf = true;
 	return code;
 }
 
@@ -1516,7 +1570,9 @@ string CodeConverter::emitForEach(string originalLine) {
 			"La lista '" + listName + "' no fue declarada antes."));
 		return "";
 	}
-	insideBlock = true;
+	blockDepth++;
+	inLoopCtx = true;
+	loopListName = util.toLowerCase(listName);
 	return "for (int i = 0; i < " + listName + ".size(); i++) {";
 }
 
@@ -1549,10 +1605,11 @@ string CodeConverter::emitInputValue(string originalLine) {
 }
 
 string CodeConverter::emitElse(string originalLine) {
-	if (insideBlock) {
-		insideBlock = true;
+	if (blockDepth > 0) {
 		return "} else {";
 	}
+
+	blockDepth++;
 	return "else {";
 }
 
@@ -1635,13 +1692,13 @@ string CodeConverter::emitReturn(string originalLine) {
 	string value = words.back();
 
 	string code;
-	if (insideBlock) {
+
+	while (blockDepth > 0) {
 		code += "}\n";
-		insideBlock = false;
+		blockDepth--;
 	}
 
 	code += "return " + value + ";";
-
 	if (inFunction) {
 		code += "\n}";
 		inFunction = false;
@@ -1723,7 +1780,6 @@ string CodeConverter::normalizeWord(const string& word) {
 	"de","la","el","los","las",
 	"un","una","unos","unas",
 	"cada","en","con","valor",
-	"numero","número"
 	};
 
 	for (const auto& stop : stopwords) {
@@ -1748,29 +1804,85 @@ Variable* CodeConverter::findVariable(string name) {
 }
 
 bool CodeConverter::isReservedWord(string& word) {
-	static vector<string> reserved = {
-	"sumar","restar","multiplicar","dividir","por",
-	"asignar","a","y","si","sino",
-	"mientras","repetir","crear","variable","estructura",
-	"lista","funcion","retornar","imprimir","mostrar"
+	static unordered_set<string> reserved = {
+		"sumar","restar","multiplicar","dividir","por",
+		"asignar","a","y","si","sino",
+		"mientras","repetir","crear","variable","estructura",
+		"lista","funcion","retornar","imprimir","mostrar","parametro"
 	};
-	for (const string& r : reserved) {
-		if (word == r) return true;
-	}
-	return false;
+	Utility u;
+	string lower = u.toLowerCase(word);
+	return reserved.count(lower) > 0;
 }
 
 string CodeConverter::closeBlockIfNeeded(string nextLine) {
-	if (insideBlock) {
-		if (nextLine.find("sino") == string::npos &&
-			nextLine.find("else") == string::npos) {
-			insideBlock = false;
-			return "}";
-		}
-	}
-	return "";
-}
+	if (nextLine.find("sino") != string::npos || nextLine.find("else") != string::npos)
+		return "";
 
+	if (blockDepth <= 0) return "";
+
+	Utility util;
+	string low = util.toLowerCase(nextLine);
+
+	if (inLoopCtx) {
+		bool mentionsIndex = (low.find("[i]") != string::npos);
+		bool mentionsListIndex = (!loopListName.empty() && low.find(util.toLowerCase(loopListName) + "[") != string::npos);
+		bool mentionsIbare = (low.find(" i ") != string::npos) ||
+			(low.rfind("i ", 0) == 0) ||
+			(!low.empty() && low.back() == 'i');
+
+		if (mentionsIndex || mentionsListIndex || mentionsIbare) {
+			return "";
+		}
+		blockDepth--;
+		inLoopCtx = false;
+		loopListName.clear();
+		return "}";
+	}
+
+	if (inWhileCtx) {
+		bool mentionsWhileVar = (!whileVarNameFlat.empty() && low.find(whileVarNameFlat) != string::npos);
+
+		bool looksLikeBody =
+			(low.find("sumar") != string::npos) ||
+			(low.find("restar") != string::npos) ||
+			(low.find("multiplicar") != string::npos) ||
+			(low.find("dividir") != string::npos) ||
+			(low.find("asignar") != string::npos) ||
+			(low.find("imprimir") != string::npos) ||
+			(low.find("mostrar") != string::npos) ||
+			(low.find("ingresar valor") != string::npos);
+
+		if (mentionsWhileVar || looksLikeBody) {
+			return "";
+		}
+		blockDepth--;
+		inWhileCtx = false;
+		whileVarNameFlat.clear();
+		return "}";
+	}
+
+	if (inIf) {
+		bool looksLikeBody =
+			(low.find("imprimir") != string::npos) ||
+			(low.find("mostrar") != string::npos) ||
+			(low.find("asignar") != string::npos) ||
+			(low.find("sumar") != string::npos) ||
+			(low.find("restar") != string::npos) ||
+			(low.find("multiplicar") != string::npos) ||
+			(low.find("dividir") != string::npos);
+
+		if (looksLikeBody) {
+			return "";
+		}
+		blockDepth--;
+		inIf = false;
+		return "}";
+	}
+
+	blockDepth--;
+	return "}";
+}
 
 
 

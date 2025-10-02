@@ -1,0 +1,56 @@
+Comenzar programa
+
+Definir funcion numero entero factorial con parametro numero entero n
+    Crear variable numero entero resultado con valor inicial 1
+    Mientras n mayor que 1
+        resultado multiplicar por n
+        n restar 1
+    Retornar resultado
+
+Crear estructura Estudiante nombre (texto) edad (entero)
+
+Crear lista enteros con 3 elementos llamada numeros
+Mostrar "Ingrese 3 valores para la lista 'numeros':"
+Ingresar los valores de la lista numeros
+
+Mostrar "Ingrese 2 estudiantes (nombre y edad). Para cada estudiante:"
+Mostrar " - Escriba el nombre y presione Enter"
+Mostrar " - Luego ingrese la edad y presione Enter"
+Crear lista de Estudiante con 2 elementos llamada estudiantes
+Ingresar los datos de cada Estudiante
+
+Recorrer la lista estudiantes y mostrar nombre edad
+
+Crear variable numero entero valorEntrada
+Mostrar "Ingrese un numero para 'valorEntrada' (sugerido <= 12):"
+Ingresar valor valorEntrada
+
+Crear variable numero decimal total con valor inicial 0
+Recorrer la lista numeros y sumar cada elemento en total
+
+Crear variable numero decimal promedio
+Calcular promedio como total dividir 3 y asignar a promedio
+
+Asignar valor 99 a lista numeros en el primer
+
+Crear variable numero entero acumulador
+Asignar 42 a acumulador
+acumulador sumar 10
+acumulador restar 2
+acumulador multiplicar por 3
+acumulador dividir 4
+
+Si acumulador mayor que 50
+    Mostrar "El acumulador es mayor que 50: " y acumulador
+sino
+    Mostrar "El acumulador no es mayor que 50: " y acumulador
+
+Repetir 2 veces mostrar "Iteracion"
+
+Crear variable numero entero resultadoFactorial
+Asignar a resultadoFactorial con llamar funcion factorial(valorEntrada)
+Mostrar "Factorial de " y valorEntrada y " = " y resultadoFactorial
+
+Mostrar "Promedio: " y promedio
+
+Terminar programa
