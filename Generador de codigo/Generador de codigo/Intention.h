@@ -29,5 +29,9 @@ enum class Intention {
 	callFunction,
 	calculate,
 	forEachLoop,
-	assignValue
+	assignValue,
+	createStruct,
+	createCustomList,
+	inputStructItems,
+	traverseStructListPrint
 };

@@ -23,10 +23,16 @@ vector<Message> CodeConverter::getMessages() {
 }
 
 bool CodeConverter::process() {
-	Utility util;
+	insideBlock = false;
 	generatedCode.clear();
 	messages.clear();
 	declaredVariables.clear();
+	headersCode.clear();
+	functionsCode.clear();
+	mainCode.clear();
+	inFunction = false;
+	sawMainStart = false;
+	Utility util;
 
 	vector<string> lines = util.splitLines(inputText);
 
@@ -63,7 +69,10 @@ bool CodeConverter::process() {
 		case Intention::returnStatement: code = emitReturn(originalLine); break;
 		case Intention::callFunction: code = emitCallFunction(originalLine); break;
 		case Intention::calculate: code = emitCalculate(originalLine); break;
-
+		case Intention::createStruct: code = emitCreateStruct(originalLine); break;
+		case Intention::createCustomList: code = emitCreateCustomList(originalLine); break;
+		case Intention::inputStructItems: code = emitInputStructItems(originalLine); break;
+		case Intention::traverseStructListPrint: code = emitTraverseStructListPrint(originalLine); break;
 		default:
 			messages.push_back(Message(MessageType::Warning,
 				"Unrecognized instruction in line: " + originalLine));
@@ -71,7 +80,12 @@ bool CodeConverter::process() {
 		}
 
 		if (!code.empty()) {
-			generatedCode += code + "\n";
+			std::string* out = &mainCode;
+			if (intention == Intention::defineFunction || intention == Intention::returnStatement || intention == Intention::createStruct || inFunction) {
+				out = &functionsCode;
+			}
+			*out += code + "\n";
+
 			messages.push_back(Message(MessageType::Information,
 				"Processed line: " + originalLine));
 		}
@@ -85,15 +99,42 @@ bool CodeConverter::process() {
 				}
 			}
 			if (!hasError) {
-				messages.push_back(Message(MessageType::Warning,
-					"No code generated for line: " + originalLine));
+				if (intention == Intention::startProgram) {
+					messages.push_back(Message(MessageType::Information,
+						"Processed line: " + originalLine));
+				}
+				else {
+					messages.push_back(Message(MessageType::Warning,
+						"No code generated for line: " + originalLine));
+				}
 			}
 		}
+
 	}
 
 	if (insideBlock) {
-		generatedCode += "}\n";
+		std::string* out = inFunction ? &functionsCode : &mainCode;
+		*out += "}\n";
 		insideBlock = false;
+	}
+
+	if (sawMainStart) {
+		headersCode =
+			"#include <iostream>\n"
+			"#include <vector>\n"
+			"#include <string>\n"
+			"using namespace std;\n\n";
+	}
+
+	if (sawMainStart && mainCode.find("int main() {") == std::string::npos) {
+		mainCode = "int main() {\n" + mainCode;
+	}
+
+	generatedCode = headersCode + functionsCode + mainCode;
+
+	if (inFunction) {
+		generatedCode += "}\n";
+		inFunction = false;
 	}
 
 	return !generatedCode.empty();
@@ -107,8 +148,18 @@ string CodeConverter::buildProgram() {
 Intention CodeConverter::detectIntention(string normalizedLine) {
 	if (normalizedLine.find("comenzar programa") != string::npos) return Intention::startProgram;
 	if (normalizedLine.find("terminar programa") != string::npos) return Intention::endProgram;
-
+	if (normalizedLine.find("llamar funcion") != string::npos) return Intention::callFunction;
 	if (normalizedLine.find("asignar") != string::npos) return Intention::assignValue;
+
+	if (normalizedLine.find("crear estructura") != string::npos) return Intention::createStruct;
+
+	if (normalizedLine.find("crear lista de") != string::npos) return Intention::createCustomList;
+
+	if (normalizedLine.find("ingresar los datos de cada") != string::npos ||
+		normalizedLine.find("ingresar los datos de cada ") != string::npos) return Intention::inputStructItems;
+
+	if (normalizedLine.find("recorrer la lista") != string::npos &&
+		(normalizedLine.find("mostrar") != string::npos)) return Intention::traverseStructListPrint;
 
 	if (normalizedLine.find("calcular") != string::npos) return Intention::calculate;
 	if ((normalizedLine.find("ingresar valor de cada") != string::npos &&
@@ -128,7 +179,6 @@ Intention CodeConverter::detectIntention(string normalizedLine) {
 	}
 	if (normalizedLine.find("definir funcion") != string::npos) return Intention::defineFunction;
 	if (normalizedLine.find("retornar") != string::npos) return Intention::returnStatement;
-	if (normalizedLine.find("llamar funcion") != string::npos) return Intention::callFunction;
 
 	if (normalizedLine.rfind("si ", 0) == 0) return Intention::ifBlock;
 	if (normalizedLine == "sino" || normalizedLine.find("sino") != string::npos) return Intention::elseBlock;
@@ -153,11 +203,12 @@ Intention CodeConverter::detectIntention(string normalizedLine) {
 	return Intention::unknown;
 }
 
-string CodeConverter::emitStart(string originalLine) {
-	return "#include <iostream>\n#include <vector>\nusing namespace std;\n\nint main() {";
+string CodeConverter::emitStart(string /*originalLine*/) {
+	sawMainStart = true;
+	return "";
 }
 
-string CodeConverter::emitEnd(string originalLine) {
+string CodeConverter::emitEnd(string /*originalLine*/) {
 	string code;
 
 	if (insideBlock) {
@@ -165,13 +216,49 @@ string CodeConverter::emitEnd(string originalLine) {
 		insideBlock = false;
 	}
 
-	code += "system(\"pause\");\nreturn 0;\n}";
+	code += "return 0;\n}";
 	return code;
 }
 
 string CodeConverter::emitSum(string originalLine) {
 	Utility util;
 	vector<string> words = util.splitWords(originalLine);
+
+	{
+		int k = -1;
+		for (int i = 0; i < (int)words.size(); ++i) {
+			if (util.toLowerCase(words[i]) == "sumar") { k = i; break; }
+		}
+		if (k > 0) {
+			string lhs;
+			for (int i = k - 1; i >= 0; --i) {
+				Variable* v = findVariable(words[i]);
+				if (v && !v->getIsList()) { lhs = v->getName(); break; }
+			}
+			if (!lhs.empty()) {
+				int j = k + 1;
+				string rhs;
+
+				if (j < (int)words.size()) {
+					if (Variable* vr = findVariable(words[j]); vr && !vr->getIsList()) {
+						rhs = vr->getName();
+					}
+				}
+				if (rhs.empty()) {
+					vector<int> nums = util.extractIntegers(originalLine);
+					if (!nums.empty()) rhs = to_string(nums.back());
+				}
+
+				if (!rhs.empty()) {
+					return lhs + " += " + rhs + ";";
+				}
+				else {
+					messages.push_back(Message(MessageType::Error,
+						"No se pudo determinar el valor a sumar en -> " + originalLine));
+				}
+			}
+		}
+	}
 
 	string target = "";
 	string operation = "";
@@ -201,7 +288,7 @@ string CodeConverter::emitSum(string originalLine) {
 			operation += var->getName();
 			foundSomething = true;
 		}
-		else if (isalpha(word[0]) && word != "asignar" && word != "a" && word != "y") {
+		else if (isalpha(static_cast<unsigned char>(word[0])) && word != "asignar" && word != "a" && word != "y") {
 			messages.push_back(Message(MessageType::Error,
 				"La variable '" + word + "' no fue declarada antes."));
 			hasError = true;
@@ -239,6 +326,45 @@ string CodeConverter::emitSubtract(string originalLine) {
 	Utility util;
 	vector<string> words = util.splitWords(originalLine);
 
+	int k = -1;
+	for (int i = 0; i < (int)words.size(); ++i) {
+		if (util.toLowerCase(words[i]) == "restar") { k = i; break; }
+	}
+	if (k > 0) {
+		string lhs;
+		for (int i = k - 1; i >= 0; --i) {
+			Variable* v = findVariable(words[i]);
+			if (v && !v->getIsList()) { lhs = v->getName(); break; }
+		}
+
+		if (!lhs.empty()) {
+			int j = k + 1;
+			string rhs;
+
+			if (j < (int)words.size()) {
+				if (Variable* vr = findVariable(words[j]); vr && !vr->getIsList()) {
+					rhs = vr->getName();
+				}
+			}
+			if (rhs.empty()) {
+				string lower = util.toLowerCase(originalLine);
+				size_t posRest = lower.find("restar");
+				if (posRest == string::npos) posRest = 0;
+				string tail = originalLine.substr(posRest);
+				vector<int> nums = util.extractIntegers(tail);
+				if (!nums.empty()) rhs = to_string(nums.front());
+			}
+
+			if (!rhs.empty()) {
+				return lhs + " -= " + rhs + ";";
+			}
+			else {
+				messages.push_back(Message(MessageType::Error,
+					"No se pudo determinar el valor a restar en -> " + originalLine));
+			}
+		}
+	}
+
 	string target = "";
 	string operation = "";
 	bool foundSomething = false;
@@ -267,7 +393,7 @@ string CodeConverter::emitSubtract(string originalLine) {
 			operation += var->getName();
 			foundSomething = true;
 		}
-		else if (isalpha(word[0]) && word != "asignar" && word != "a" && word != "y") {
+		else if (isalpha(static_cast<unsigned char>(word[0])) && word != "asignar" && word != "a" && word != "y") {
 			messages.push_back(Message(MessageType::Error,
 				"La variable '" + word + "' no fue declarada antes."));
 			hasError = true;
@@ -305,6 +431,43 @@ string CodeConverter::emitMultiply(string originalLine) {
 	Utility util;
 	vector<string> words = util.splitWords(originalLine);
 
+	int k = -1;
+	for (int i = 0; i < (int)words.size(); ++i) {
+		if (util.toLowerCase(words[i]) == "multiplicar") { k = i; break; }
+	}
+	if (k > 0) {
+		string lhs;
+		for (int i = k - 1; i >= 0; --i) {
+			Variable* v = findVariable(words[i]);
+			if (v && !v->getIsList()) { lhs = v->getName(); break; }
+		}
+
+		if (!lhs.empty()) {
+			int j = k + 1;
+			if (j < (int)words.size() && util.toLowerCase(words[j]) == "por") ++j;
+
+			string rhs;
+
+			if (j < (int)words.size()) {
+				Variable* vr = findVariable(words[j]);
+				if (vr && !vr->getIsList()) rhs = vr->getName();
+			}
+
+			if (rhs.empty()) {
+				vector<int> nums = util.extractIntegers(originalLine);
+				if (!nums.empty()) rhs = to_string(nums.back());
+			}
+
+			if (rhs.empty()) {
+				messages.push_back(Message(MessageType::Error,
+					"No se pudo determinar el valor a multiplicar en -> " + originalLine));
+				return "";
+			}
+
+			return lhs + " *= " + rhs + ";";
+		}
+	}
+
 	string target = "";
 	string operation = "";
 	bool foundSomething = false;
@@ -333,7 +496,7 @@ string CodeConverter::emitMultiply(string originalLine) {
 			operation += var->getName();
 			foundSomething = true;
 		}
-		else if (isalpha(word[0]) && word != "asignar" && word != "a" && word != "y") {
+		else if (isalpha(static_cast<unsigned char>(word[0])) && word != "asignar" && word != "a" && word != "y") {
 			messages.push_back(Message(MessageType::Error,
 				"La variable '" + word + "' no fue declarada antes."));
 			hasError = true;
@@ -371,6 +534,46 @@ string CodeConverter::emitDivide(string originalLine) {
 	Utility util;
 	vector<string> words = util.splitWords(originalLine);
 
+	{
+		int k = -1;
+		for (int i = 0; i < (int)words.size(); ++i) {
+			if (util.toLowerCase(words[i]) == "dividir") { k = i; break; }
+		}
+		if (k > 0) {
+			string lhs;
+			for (int i = k - 1; i >= 0; --i) {
+				Variable* v = findVariable(words[i]);
+				if (v && !v->getIsList()) { lhs = v->getName(); break; }
+			}
+
+			if (!lhs.empty()) {
+				int j = k + 1;
+				if (j < (int)words.size() && util.toLowerCase(words[j]) == "por") ++j;
+
+				string rhs;
+
+				if (j < (int)words.size()) {
+					if (Variable* vr = findVariable(words[j]); vr && !vr->getIsList()) {
+						rhs = vr->getName();
+					}
+				}
+				if (rhs.empty()) {
+					vector<int> nums = util.extractIntegers(originalLine);
+					if (!nums.empty()) rhs = to_string(nums.back());
+				}
+
+				if (!rhs.empty()) {
+					return lhs + " /= " + rhs + ";";
+				}
+				else {
+					messages.push_back(Message(MessageType::Error,
+						"No se pudo determinar el divisor en -> " + originalLine));
+					return "";
+				}
+			}
+		}
+	}
+
 	string target = "";
 	string operation = "";
 	bool foundSomething = false;
@@ -399,7 +602,7 @@ string CodeConverter::emitDivide(string originalLine) {
 			operation += var->getName();
 			foundSomething = true;
 		}
-		else if (isalpha(word[0]) && word != "asignar" && word != "a" && word != "y") {
+		else if (isalpha(static_cast<unsigned char>(word[0])) && word != "asignar" && word != "a" && word != "y") {
 			messages.push_back(Message(MessageType::Error,
 				"La variable '" + word + "' no fue declarada antes."));
 			hasError = true;
@@ -694,97 +897,153 @@ string CodeConverter::emitRepeat(string originalLine) {
 
 string CodeConverter::emitWhile(string originalLine) {
 	Utility util;
-	vector<int> numbers = util.extractIntegers(originalLine);
-
-	if (numbers.empty()) {
-		messages.push_back(Message(MessageType::Error,
-			"No se encontró condición numérica en -> " + originalLine));
-		return "";
-	}
-
-	int limit = numbers[0];
-	string varName = "number";
-
 	vector<string> words = util.splitWords(originalLine);
+	string lowerLine = util.toLowerCase(originalLine);
+
+	string cmp = "<";
+	if (lowerLine.find("mayor o igual") != string::npos) cmp = ">=";
+	else if (lowerLine.find("menor o igual") != string::npos) cmp = "<=";
+	else if (lowerLine.find("distinto de") != string::npos ||
+		lowerLine.find("diferente de") != string::npos ||
+		lowerLine.find("no igual") != string::npos) cmp = "!=";
+	else if (lowerLine.find("mayor que") != string::npos) cmp = ">";
+	else if (lowerLine.find("menor que") != string::npos) cmp = "<";
+	else if (lowerLine.find("igual que") != string::npos ||
+		lowerLine.find("igual a") != string::npos ||
+		lowerLine.find("igual") != string::npos) cmp = "==";
+
+	string lhs, rhs;
+	string candidateName;
+
 	for (const string& w : words) {
-		Variable* var = findVariable(w);
-		if (var != nullptr && !var->getIsList()) {
-			varName = var->getName();
+		if (w == "i") {
+			lhs = "i";
 			break;
+		}
+		if (w.find('[') != string::npos && w.find(']') != string::npos) {
+			lhs = w;
+			break;
+		}
+		if (Variable* v = findVariable(w)) {
+			if (!v->getIsList()) { lhs = v->getName(); break; }
+		}
+		if (candidateName.empty() && !w.empty() && isalpha(static_cast<unsigned char>(w[0]))) {
+			candidateName = w;
 		}
 	}
 
-	Variable* var = findVariable(varName);
-	if (!var) {
-		messages.push_back(Message(MessageType::Error,
-			"La variable '" + varName + "' no fue declarada antes."));
+	if (lhs.empty()) {
+		if (!candidateName.empty()) {
+			messages.push_back(Message(MessageType::Error,
+				"La variable '" + candidateName + "' no fue declarada antes."));
+		}
+		else {
+			messages.push_back(Message(MessageType::Error,
+				"La condición 'Mientras ...' requiere una variable existente (ej.: 'Mientras n mayor que 1')."));
+		}
 		return "";
 	}
 
-	string increment = "1";
-	if (numbers.size() >= 2) {
-		increment = to_string(numbers[1]);
+	vector<int> nums = util.extractIntegers(originalLine);
+	if (!nums.empty()) {
+		rhs = to_string(nums.front());
+	}
+	else {
+		for (const string& w : words) {
+			if (w == "i" && lhs != "i") { rhs = "i"; break; }
+			if (w.find('[') != string::npos && w.find(']') != string::npos) {
+				if (w != lhs) { rhs = w; break; }
+			}
+			if (Variable* v = findVariable(w)) {
+				if (!v->getIsList()) {
+					if (v->getName() != lhs) { rhs = v->getName(); break; }
+				}
+			}
+		}
 	}
 
-	string code;
-	code += "while (" + varName + " < " + to_string(limit) + ") {\n";
-	code += "    " + varName + " += " + increment + ";\n";
-	code += "}";
+	if (rhs.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se encontró valor a comparar en -> " + originalLine));
+		return "";
+	}
+
+	string code = "while (" + lhs + " " + cmp + " " + rhs + ") {";
+	insideBlock = true;
 	return code;
 }
 
 string CodeConverter::emitIf(string originalLine) {
 	Utility util;
 	vector<string> words = util.splitWords(originalLine);
-	vector<int> numbers = util.extractIntegers(originalLine);
+	string lowerLine = util.toLowerCase(originalLine);
 
-	string leftOperand = "";
-	string rightOperand = "";
 	string op = "==";
+	if (lowerLine.find("mayor o igual") != string::npos) op = ">=";
+	else if (lowerLine.find("menor o igual") != string::npos) op = "<=";
+	else if (lowerLine.find("distinto de") != string::npos ||
+		lowerLine.find("diferente de") != string::npos ||
+		lowerLine.find("no igual") != string::npos) op = "!=";
+	else if (lowerLine.find("mayor que") != string::npos) op = ">";
+	else if (lowerLine.find("menor que") != string::npos) op = "<";
+	else if (lowerLine.find("igual que") != string::npos ||
+		lowerLine.find("igual a") != string::npos ||
+		lowerLine.find("igual") != string::npos) op = "==";
 
-	if (originalLine.find("mayor que") != string::npos) op = ">";
-	else if (originalLine.find("menor que") != string::npos) op = "<";
-	else if (originalLine.find("igual a") != string::npos) op = "==";
+	vector<string> quoted;
+	{
+		size_t pos = 0;
+		while (true) {
+			size_t a = originalLine.find('"', pos);
+			if (a == string::npos) break;
+			size_t b = originalLine.find('"', a + 1);
+			if (b == string::npos) break;
+			quoted.push_back(originalLine.substr(a, b - a + 1));
+			pos = b + 1;
+		}
+	}
+
+	string leftOperand, rightOperand;
 
 	for (string& w : words) {
 		if (isReservedWord(w)) continue;
 
-		if (w.find("[") != string::npos && w.find("]") != string::npos) {
-			if (leftOperand.empty()) leftOperand = w;
-			else rightOperand = w;
-			continue;
-		}
-
 		if (w == "i") {
 			if (leftOperand.empty()) leftOperand = "i";
-			else rightOperand = "i";
+			else if (rightOperand.empty()) rightOperand = "i";
 			continue;
 		}
 
-		Variable* var = findVariable(w);
-		if (var != nullptr) {
-			if (leftOperand.empty()) leftOperand = var->getName();
-			else rightOperand = var->getName();
+		if (w.find('[') != string::npos && w.find(']') != string::npos) {
+			if (leftOperand.empty()) leftOperand = w;
+			else if (rightOperand.empty()) rightOperand = w;
+			continue;
+		}
+
+		if (Variable* v = findVariable(w)) {
+			if (!v->getIsList()) {
+				if (leftOperand.empty()) leftOperand = v->getName();
+				else if (rightOperand.empty()) rightOperand = v->getName();
+			}
 			continue;
 		}
 	}
 
-	if (!numbers.empty()) {
-		if (leftOperand.empty()) leftOperand = to_string(numbers[0]);
-		else if (rightOperand.empty()) rightOperand = to_string(numbers[0]);
+	for (const auto& q : quoted) {
+		if (leftOperand.empty()) leftOperand = q;
+		else if (rightOperand.empty()) { rightOperand = q; break; }
 	}
 
-	string lowerLine = util.toLowerCase(originalLine);
-	if (lowerLine.find("verdadero") != string::npos || lowerLine.find("true") != string::npos) {
-		if (rightOperand.empty()) rightOperand = "true";
-	}
-	else if (lowerLine.find("falso") != string::npos || lowerLine.find("false") != string::npos) {
-		if (rightOperand.empty()) rightOperand = "false";
+	vector<int> nums = util.extractIntegers(originalLine);
+	for (int n : nums) {
+		string s = to_string(n);
+		if (leftOperand.empty()) leftOperand = s;
+		else if (rightOperand.empty()) { rightOperand = s; break; }
 	}
 
 	if (leftOperand.empty() || rightOperand.empty()) {
 		messages.push_back(Message(MessageType::Error,
-			"No se encontró valor o variable de comparación en -> " + originalLine));
+			"No se encontró valor/variable suficiente para la comparación en -> " + originalLine));
 		return "";
 	}
 
@@ -931,18 +1190,244 @@ string CodeConverter::emitCalculate(string originalLine) {
 	return target + " = " + operation + ";";
 }
 
+string CodeConverter::emitCreateStruct(string originalLine) {
+	Utility util;
+	string lower = util.toLowerCase(originalLine);
+
+	string structName;
+	{
+		size_t pos = lower.find("crear estructura");
+		if (pos != string::npos) {
+			vector<string> w = util.splitWords(originalLine.substr(pos + 17));
+			if (!w.empty()) structName = w[0];
+		}
+	}
+	if (structName.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se indicó el nombre de la estructura en -> " + originalLine));
+		return "";
+	}
+
+	vector<pair<string, string>> fields;
+
+	size_t pos = 0;
+	while (true) {
+		size_t a = originalLine.find('(', pos);
+		if (a == string::npos) break;
+		size_t b = originalLine.find(')', a + 1);
+		if (b == string::npos) break;
+		string inside = util.toLowerCase(util.trimSpaces(originalLine.substr(a + 1, b - a - 1)));
+
+		string fieldName;
+		if (a > 0) {
+			string left = originalLine.substr(0, a);
+			vector<string> wl = util.splitWords(left);
+			if (!wl.empty()) fieldName = wl.back();
+		}
+
+		string cppType = "int";
+		if (inside.find("texto") != string::npos || inside.find("cadena") != string::npos || inside.find("string") != string::npos)
+			cppType = "string";
+		else if (inside.find("decimal") != string::npos || inside.find("float") != string::npos || inside.find("double") != string::npos)
+			cppType = "float";
+		else if (inside.find("entero") != string::npos || inside.find("int") != string::npos)
+			cppType = "int";
+
+		if (fieldName.empty()) {
+			messages.push_back(Message(MessageType::Warning,
+				"No se pudo determinar el nombre del campo para tipo '" + inside + "' en -> " + originalLine));
+		}
+		else {
+			fields.push_back({ fieldName, cppType });
+		}
+		pos = b + 1;
+	}
+
+	if (fields.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se encontraron campos de la estructura en -> " + originalLine));
+		return "";
+	}
+
+	structFields[structName] = fields;
+
+	string code = "struct " + structName + " {\n";
+	for (auto& f : fields) {
+		if (f.second == "string") code += "    std::string " + f.first + ";\n";
+		else                      code += "    " + f.second + " " + f.first + ";\n";
+	}
+	code += "};";
+	return code;
+}
+
+string CodeConverter::emitCreateCustomList(string originalLine) {
+	Utility util;
+	string lower = util.toLowerCase(originalLine);
+
+	string typeName;
+	{
+		size_t pos = lower.find("crear lista de");
+		if (pos != string::npos) {
+			vector<string> w = util.splitWords(originalLine.substr(pos + 15));
+			if (!w.empty()) typeName = w[0];
+		}
+	}
+	if (typeName.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se indicó el tipo para la lista en -> " + originalLine));
+		return "";
+	}
+
+	vector<int> nums = util.extractIntegers(originalLine);
+	if (nums.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se indicó tamaño de la lista en -> " + originalLine));
+		return "";
+	}
+	int size = nums[0];
+
+	string listName;
+	{
+		vector<string> w = util.splitWords(originalLine);
+		for (size_t i = 0; i + 1 < w.size(); ++i) {
+			if (util.toLowerCase(w[i]) == "llamada") { listName = w[i + 1]; break; }
+		}
+		if (listName.empty()) {
+			string ln = util.toLowerCase(typeName);
+			listName = ln + "s";
+		}
+	}
+
+	Variable newVar(typeName, listName, "", size, true);
+	declaredVariables.push_back(newVar);
+
+	return "vector<" + typeName + "> " + listName + "(" + to_string(size) + ");";
+}
+
+string CodeConverter::emitInputStructItems(string originalLine) {
+	Utility util;
+	string lower = util.toLowerCase(originalLine);
+
+	string singularType;
+	{
+		size_t pos = lower.find("cada ");
+		if (pos != string::npos) {
+			vector<string> w = util.splitWords(originalLine.substr(pos + 5));
+			if (!w.empty()) singularType = w[0];
+		}
+	}
+	if (singularType.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se pudo determinar el tipo en -> " + originalLine));
+		return "";
+	}
+
+	string listName, structName;
+	for (auto& v : declaredVariables) {
+		if (v.getIsList()) {
+			string t = v.getType();
+			if (util.toLowerCase(t) == util.toLowerCase(singularType)) {
+				listName = v.getName();
+				structName = t;
+				break;
+			}
+		}
+	}
+	if (listName.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se encontró una lista de '" + singularType + "' declarada antes."));
+		return "";
+	}
+
+	if (structFields.find(structName) == structFields.end()) {
+		messages.push_back(Message(MessageType::Error,
+			"No hay definición de estructura para '" + structName + "'."));
+		return "";
+	}
+	const auto& fields = structFields[structName];
+
+	string code;
+	code += "for (int i = 0; i < " + listName + ".size(); i++) {\n";
+	for (auto& f : fields) {
+		if (f.second == "string") {
+			code += "    getline(cin >> ws, " + listName + "[i]." + f.first + ");\n";
+		}
+		else {
+			code += "    cin >> " + listName + "[i]." + f.first + ";\n";
+		}
+	}
+	code += "}";
+	return code;
+}
+
+string CodeConverter::emitTraverseStructListPrint(string originalLine) {
+	Utility util;
+	string lower = util.toLowerCase(originalLine);
+
+	string listName, structName;
+	for (auto& v : declaredVariables) {
+		if (v.getIsList()) {
+			if (structFields.find(v.getType()) != structFields.end()) {
+				listName = v.getName();
+				structName = v.getType();
+				break;
+			}
+		}
+	}
+	if (listName.empty()) {
+		messages.push_back(Message(MessageType::Error,
+			"No se encontró una lista de estructuras para recorrer en -> " + originalLine));
+		return "";
+	}
+
+	vector<string> toPrint;
+	{
+		size_t pos = lower.find("mostrar");
+		if (pos != string::npos) {
+			string tail = util.toLowerCase(originalLine.substr(pos + 7));
+			vector<string> w = util.splitWords(tail);
+
+			unordered_set<string> valid;
+			for (auto& p : structFields[structName]) valid.insert(util.toLowerCase(p.first));
+			for (auto& tok : w) {
+				string lt = util.toLowerCase(tok);
+				if (valid.count(lt)) toPrint.push_back(lt);
+			}
+		}
+	}
+	if (toPrint.empty()) {
+		for (auto& p : structFields[structName]) toPrint.push_back(p.first);
+	}
+
+	string code;
+	code += "for (int i = 0; i < " + listName + ".size(); i++) {\n";
+	code += "    cout";
+	for (size_t k = 0; k < toPrint.size(); ++k) {
+		string fieldName = toPrint[k];
+		for (auto& p : structFields[structName]) {
+			if (util.toLowerCase(p.first) == fieldName) {
+				code += " << " + listName + "[i]." + p.first;
+				if (k + 1 < toPrint.size()) code += " << \" \"";
+				break;
+			}
+		}
+	}
+	code += " << endl;\n";
+	code += "}";
+	return code;
+}
+
 string CodeConverter::emitInputList(string originalLine) {
 	Utility util;
 	vector<string> words = util.splitWords(originalLine);
 
-	string listName = "";
-	for (size_t i = 0; i < words.size(); i++) {
-		if (words[i] == "lista" && i + 1 < words.size()) {
-			listName = words.back();
+	string listName;
+	for (size_t i = 0; i + 1 < words.size(); ++i) {
+		if (util.toLowerCase(words[i]) == "lista") {
+			listName = words[i + 1];
 			break;
 		}
 	}
-
 	if (listName.empty()) {
 		messages.push_back(Message(MessageType::Error,
 			"No se especificó el nombre de la lista en -> " + originalLine));
@@ -1031,7 +1516,7 @@ string CodeConverter::emitForEach(string originalLine) {
 			"La lista '" + listName + "' no fue declarada antes."));
 		return "";
 	}
-
+	insideBlock = true;
 	return "for (int i = 0; i < " + listName + ".size(); i++) {";
 }
 
@@ -1080,22 +1565,59 @@ string CodeConverter::emitDefineFunction(string originalLine) {
 	string paramType = "int";
 	string paramName = "x";
 
-	for (size_t i = 0; i < words.size(); i++) {
-		if (words[i] == "entero" || words[i] == "int") returnType = "int";
-		else if (words[i] == "decimal" || words[i] == "float") returnType = "float";
-		else if (words[i] == "texto" || words[i] == "string") returnType = "string";
+	auto isType = [](const string& w) {
+		return w == "entero" || w == "int"
+			|| w == "decimal" || w == "float"
+			|| w == "texto" || w == "string";
+		};
 
-		if (words[i] == "funcion" && i + 1 < words.size()) {
-			functionName = words[i + 1];
+	auto applyType = [&](const string& w, string& outType) {
+		if (w == "decimal" || w == "float") outType = "float";
+		else if (w == "texto" || w == "string") outType = "string";
+		else outType = "int";
+		};
+
+	for (size_t i = 0; i < words.size(); ++i) {
+		const string& w = words[i];
+
+		if (isType(w)) {
+			applyType(w, returnType);
 		}
 
-		if (words[i] == "parametro" && i + 2 < words.size()) {
-			if (words[i + 1] == "entero" || words[i + 1] == "int") paramType = "int";
-			else if (words[i + 1] == "decimal" || words[i + 1] == "float") paramType = "float";
-			else if (words[i + 1] == "texto" || words[i + 1] == "string") paramType = "string";
-			paramName = words[i + 2];
+		if (w == "funcion") {
+			size_t j = i + 1;
+
+			if (j < words.size() && words[j] == "numero") ++j;
+
+			if (j < words.size() && isType(words[j])) {
+				applyType(words[j], returnType);
+				++j;
+			}
+
+			if (j < words.size()) {
+				functionName = words[j];
+			}
+		}
+
+		if (w == "parametro") {
+			size_t j = i + 1;
+
+			if (j < words.size() && words[j] == "numero") ++j;
+
+			if (j < words.size() && isType(words[j])) {
+				applyType(words[j], paramType);
+				++j;
+			}
+
+			if (j < words.size()) {
+				paramName = words[j];
+			}
 		}
 	}
+
+	declaredVariables.emplace_back(paramType, paramName, "0", 0, false);
+
+	inFunction = true;
 
 	return returnType + " " + functionName + "(" + paramType + " " + paramName + ") {";
 }
@@ -1111,36 +1633,65 @@ string CodeConverter::emitReturn(string originalLine) {
 	}
 
 	string value = words.back();
-	return "return " + value + ";";
+
+	string code;
+	if (insideBlock) {
+		code += "}\n";
+		insideBlock = false;
+	}
+
+	code += "return " + value + ";";
+
+	if (inFunction) {
+		code += "\n}";
+		inFunction = false;
+	}
+	return code;
 }
 
 string CodeConverter::emitCallFunction(string originalLine) {
 	Utility util;
-	vector<string> words = util.splitWords(originalLine);
+	string lower = util.toLowerCase(originalLine);
 
-	string functionName = "";
-	string arg = "";
-	string target = "";
-
-	for (size_t i = 0; i < words.size(); i++) {
-		if (words[i] == "funcion" && i + 1 < words.size()) {
-			functionName = words[i + 1];
-		}
-		if (words[i] == "asignar" && i + 2 < words.size()) {
-			target = words[i + 2];
-		}
-		if (words[i] == "con" && i + 1 < words.size()) {
-			arg = words[i + 1];
+	string target;
+	{
+		size_t apos = lower.find(" a ");
+		if (apos != string::npos) {
+			vector<string> w = util.splitWords(originalLine.substr(apos + 3));
+			if (!w.empty()) target = w[0];
 		}
 	}
 
-	if (functionName.empty() || target.empty() || arg.empty()) {
+	string func;
+	{
+		size_t fpos = lower.find("funcion");
+		if (fpos != string::npos) {
+			string tail = originalLine.substr(fpos + 7);
+			vector<string> w = util.splitWords(tail);
+			if (!w.empty()) {
+				func = w[0];
+				size_t par = func.find('(');
+				if (par != string::npos) func = func.substr(0, par);
+			}
+		}
+	}
+
+	string arg;
+	{
+		size_t l = originalLine.find('(');
+		size_t r = (l == string::npos) ? string::npos : originalLine.find(')', l + 1);
+		if (l != string::npos && r != string::npos && r > l + 1) {
+			arg = util.trimSpaces(originalLine.substr(l + 1, r - l - 1));
+		}
+	}
+
+	if (target.empty() || func.empty()) {
 		messages.push_back(Message(MessageType::Error,
 			"No se pudo interpretar la llamada a función en -> " + originalLine));
 		return "";
 	}
 
-	return target + " = " + functionName + "(" + arg + ");";
+	return target + " = " + func + "(" + arg + ");";
 }
 
 int CodeConverter::getIndexFromWordOrNumber(string originalLine, vector<string> words) {
@@ -1169,9 +1720,10 @@ int CodeConverter::getIndexFromWordOrNumber(string originalLine, vector<string> 
 
 string CodeConverter::normalizeWord(const string& word) {
 	static vector<string> stopwords = {
-		"de", "la", "el", "los", "las",
-		"un", "una", "unos", "unas",
-		"cada", "en", "con", "valor"
+	"de","la","el","los","las",
+	"un","una","unos","unas",
+	"cada","en","con","valor",
+	"numero","número"
 	};
 
 	for (const auto& stop : stopwords) {
@@ -1197,10 +1749,10 @@ Variable* CodeConverter::findVariable(string name) {
 
 bool CodeConverter::isReservedWord(string& word) {
 	static vector<string> reserved = {
-		"sumar", "restar", "multiplicar", "dividir",
-		"asignar", "a", "y", "si", "sino",
-		"mientras", "repetir", "crear", "variable",
-		"lista", "funcion", "retornar", "imprimir", "mostrar"
+	"sumar","restar","multiplicar","dividir","por",
+	"asignar","a","y","si","sino",
+	"mientras","repetir","crear","variable","estructura",
+	"lista","funcion","retornar","imprimir","mostrar"
 	};
 	for (const string& r : reserved) {
 		if (word == r) return true;
