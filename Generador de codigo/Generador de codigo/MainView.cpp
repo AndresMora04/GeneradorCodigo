@@ -1,14 +1,47 @@
 ﻿#include "MainView.h"
 
-MainView::MainView(QWidget* parent)
-	: QMainWindow(parent)
-{
-	ui.setupUi(this);
-	setWindowTitle("Natural Language to C++ Converter");
 
-	connect(ui.btnLoad, &QPushButton::clicked, this, &MainView::onLoadFile);
-	connect(ui.btnConvert, &QPushButton::clicked, this, &MainView::onConvert);
-	connect(ui.btnSave, &QPushButton::clicked, this, &MainView::onSaveFile);
+MainView::MainView(QWidget* parent)
+    : QMainWindow(parent)
+{
+    ui.setupUi(this);
+    loginWindow = qobject_cast<LogIn*>(parent);
+
+    setWindowTitle("Natural Language to C++ Converter");
+    setObjectName("MainView");
+
+    ui.btnLoad->setProperty("kind", "secondary");
+    ui.btnConvert->setProperty("kind", "primary");
+    ui.btnSave->setProperty("kind", "secondary");
+
+    ui.lbTitle->setProperty("role", "title");
+
+    ui.txtInput->setPlaceholderText("Escribe aquí las instrucciones en lenguaje natural…");
+    ui.txtOutput->setPlaceholderText("Aquí verás el código C++ generado…");
+
+    ui.txtOutput->setReadOnly(true);
+    ui.txtOutput->setFocusPolicy(Qt::NoFocus);
+
+    if (QFrame* f1 = findChild<QFrame*>("frameInput"))  f1->setProperty("variant", "card");
+    if (QFrame* f2 = findChild<QFrame*>("frameOutput")) f2->setProperty("variant", "card");
+
+    auto repolish = [](QWidget* w){
+        if (!w) return;
+        w->style()->unpolish(w);
+        w->style()->polish(w);
+        w->update();
+    };
+    repolish(ui.btnLoad);
+    repolish(ui.btnConvert);
+    repolish(ui.btnSave);
+    repolish(ui.lbTitle);
+    repolish(ui.txtOutput);
+    repolish(findChild<QFrame*>("frameInput"));
+    repolish(findChild<QFrame*>("frameOutput"));
+
+    connect(ui.btnLoad,    &QPushButton::clicked, this, &MainView::onLoadFile);
+    connect(ui.btnConvert, &QPushButton::clicked, this, &MainView::onConvert);
+    connect(ui.btnSave,    &QPushButton::clicked, this, &MainView::onSaveFile);
 }
 
 MainView::~MainView() {}
@@ -94,6 +127,27 @@ void MainView::onSaveFile()
 	file.close();
 
 	statusBar()->showMessage("File saved at " + path, 3000);
+}
+
+void MainView::onBackToLogin() {
+	if (loginWindow) {
+		this->hide();
+		loginWindow->show();
+	}
+	else {
+		this->close();
+	}
+}
+
+void MainView::closeEvent(QCloseEvent* event) {
+	if (loginWindow) {
+		this->hide();
+		loginWindow->show();
+		event->ignore();
+	}
+	else {
+		QMainWindow::closeEvent(event);
+	}
 }
 
 void MainView::ensureProjectStructure(const QString& folderPath) {

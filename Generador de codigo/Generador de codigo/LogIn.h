@@ -4,6 +4,8 @@
 #include "ui_LogIn.h"
 #include "MainView.h"
 
+class MainView;
+
 class LogIn : public QMainWindow
 {
     Q_OBJECT
@@ -17,4 +19,5 @@ private slots:
 
 private:
     Ui::LogInView ui;
+    MainView* mainView = nullptr;
 };
