@@ -649,62 +649,52 @@ string CodeConverter::emitPrint(string originalLine) {
 		size_t end = originalLine.find("\"", pos + 1);
 		if (end == string::npos) break;
 		string text = originalLine.substr(pos, end - pos + 1);
-		parts.push_back(text);
+		if (find(parts.begin(), parts.end(), text) == parts.end())
+			parts.push_back(text);
 		pos = end + 1;
 	}
 
 	vector<string> words = util.splitWords(originalLine);
-	for (size_t i = 0; i < words.size(); i++) {
+	for (size_t i = 0; i + 1 < words.size(); i++) {
 		string lw = util.toLowerCase(words[i]);
-		if (lw == "y" && i + 1 < words.size()) {
+		if (lw == "y") {
 			string candidate = words[i + 1];
 
 			if (candidate == "i") {
-				parts.push_back("i");
+				if (find(parts.begin(), parts.end(), string("i")) == parts.end())
+					parts.push_back("i");
 				continue;
 			}
 
 			if (Variable* var = findVariable(candidate)) {
-				parts.push_back(var->getName());
-			}
-		}
-	}
-
-	{
-		string lower = util.toLowerCase(originalLine);
-		bool startsWithImprimir = (lower.rfind("imprimir ", 0) == 0);
-		bool startsWithMostrar = (lower.rfind("mostrar ", 0) == 0);
-
-		if (startsWithImprimir || startsWithMostrar) {
-			for (size_t i = 1; i < words.size(); ++i) {
-				string tok = words[i];
-				string ltok = util.toLowerCase(tok);
-				if (ltok == "y") continue;
-
-				if (tok == "i") {
-					parts.push_back("i");
-					continue;
-				}
-				if (Variable* var = findVariable(tok)) {
-					parts.push_back(var->getName());
-				}
+				string name = var->getName();
+				if (find(parts.begin(), parts.end(), name) == parts.end())
+					parts.push_back(name);
 			}
 		}
 	}
 
 	if (parts.empty()) {
 		string lower = util.toLowerCase(originalLine);
-		if (lower.rfind("imprimir ", 0) == 0 || lower.rfind("mostrar ", 0) == 0) {
-			vector<string> w = util.splitWords(originalLine);
-			if (w.size() >= 2) {
-				if (w[1] == "i") {
+		bool startsWithImprimir = (lower.rfind("imprimir ", 0) == 0);
+		bool startsWithMostrar = (lower.rfind("mostrar ", 0) == 0);
+
+		if (startsWithImprimir || startsWithMostrar) {
+			if (words.size() >= 2) {
+				string tok = words[1];
+
+				if (tok == "i") {
 					return "cout << i << endl;";
 				}
-				if (Variable* v = findVariable(w[1])) {
+
+				if (Variable* v = findVariable(tok)) {
 					return "cout << " + v->getName() + " << endl;";
 				}
 			}
 		}
+	}
+
+	if (parts.empty()) {
 		messages.push_back(Message(MessageType::Error,
 			"No se pudo determinar qué imprimir en -> " + originalLine));
 		return "";
@@ -715,7 +705,6 @@ string CodeConverter::emitPrint(string originalLine) {
 		code += " << " + p;
 	}
 	code += " << endl;";
-
 	return code;
 }
 
